@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{5A7B11B7-274F-4366-BFE7-A5E2334BA651}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>LT.SuperTranCockpit.Entity</RootNamespace>
+    <AssemblyName>LT.SuperTranCockpit.Entity</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Output\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\Output\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="LT.Common.IO.Storage.Model, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\RefrenceDLL\LT.Common.IO.Storage.Model.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Alarm\AlarmCodeConfigEntity.cs" />
+    <Compile Include="DefectStaticByRegionAndCodeEntity.cs" />
+    <Compile Include="DefectStaticByRegionEntity.cs" />
+    <Compile Include="CodePriorityRuleEntity.cs" />
+    <Compile Include="GradePriorityRuleEntity.cs" />
+    <Compile Include="CustomHistoryEntity.cs" />
+    <Compile Include="PlcConfigInitialEntityId.cs" />
+    <Compile Include="Alarm\AlarmHistoryEntity.cs" />
+    <Compile Include="Alarm\AlarmConfigEntity.cs" />
+    <Compile Include="CapacityYieldByHourAndPositionEntity.cs" />
+    <Compile Include="CapacityYieldByHourEntity.cs" />
+    <Compile Include="PlcConfigInitialEntity.cs" />
+    <Compile Include="ConfigChangeHistoryEntity.cs" />
+    <Compile Include="ICW_LCD_UnloadBarcodeBlindTrayidRecordEntity.cs" />
+    <Compile Include="ActionTimeHistoryEntity.cs" />
+    <Compile Include="MttrEntity.cs" />
+    <Compile Include="MttcEntity.cs" />
+    <Compile Include="MtbaEntity.cs" />
+    <Compile Include="NorthboundInterfaceHistoryEntity.cs" />
+    <Compile Include="PointInspectionEntity.cs" />
+    <Compile Include="ProcessCodeGradeRuleEntity.cs" />
+    <Compile Include="ProcessPriorityRuleEntity.cs" />
+    <Compile Include="RecipeConfigEntity.cs" />
+    <Compile Include="NoPartternRecipeConfigEntity.cs" />
+    <Compile Include="ColorInspectRecipeConfigDetailEntity.cs" />
+    <Compile Include="IAutoClear.cs" />
+    <Compile Include="ICW_LCD_AoiDefectEntity.cs" />
+    <Compile Include="ICW_LCD_ColorInspDetailResultEntity.cs" />
+    <Compile Include="ICW_LCD_ActionDetailResultEntity.cs" />
+    <Compile Include="ICW_LCD_InspectionResultEntity.cs" />
+    <Compile Include="ICW_LCD_RemovePanelResultEntity.cs" />
+    <Compile Include="ICW_LCD_SurfaceDefectEntity.cs" />
+    <Compile Include="ICW_LCD_FinalJudgeEntity.cs" />
+    <Compile Include="ICW_LCD_IdMapEntity.cs" />
+    <Compile Include="ICW_LCD_SurfaceResultEntity.cs" />
+    <Compile Include="ICW_LCD_UniqueIdMapEntity.cs" />
+    <Compile Include="InspectionResult.cs" />
+    <Compile Include="InspectionResultDefect.cs" />
+    <Compile Include="InspectionResultImage.cs" />
+    <Compile Include="ColorInspectRecipeConfigEntity.cs" />
+    <Compile Include="FunctionResultEntity.cs" />
+    <Compile Include="ProcessResultEntity.cs" />
+    <Compile Include="InspectSummaryEntity.cs" />
+    <Compile Include="PanelInfoEntity.cs" />
+    <Compile Include="OperationHistoryEntity.cs" />
+    <Compile Include="ProcessResultSubEntity.cs" />
+    <Compile Include="ProductionHistoryEntity.cs" />
+    <Compile Include="SystemConfigEntity.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="CapacityYieldByShiftEntity.cs" />
+    <Compile Include="SystemHistoryEntity.cs" />
+    <Compile Include="ActivationHistoryId.cs" />
+    <Compile Include="ActivationHistoryEntity.cs" />
+    <Compile Include="Temp_FunctionResultEnity.cs" />
+    <Compile Include="Temp_ICW_LCD_ActionDetailResultEntity.cs" />
+    <Compile Include="Temp_InspectionResult.cs" />
+    <Compile Include="Temp_InspectionResultDefect.cs" />
+    <Compile Include="Temp_InspectionResultImage.cs" />
+    <Compile Include="Temp_InspectSummaryEntity.cs" />
+    <Compile Include="Temp_PanelInfoEntity.cs" />
+    <Compile Include="Temp_ProcessResultEntity.cs" />
+    <Compile Include="Temp_ProcessResultSubEntity.cs" />
+    <Compile Include="Temp_StationAndPositionHistory.cs" />
+    <Compile Include="TossMaterialByShiftId.cs" />
+    <Compile Include="TossMaterialByShiftEntity.cs" />
+    <Compile Include="UserInfoEntity.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
