@@ -25,6 +25,11 @@ namespace Frame
 
         public VerbOnStorage Storage { get; private set; }
 
+        /// <summary>
+        /// 连接数据库
+        /// </summary>
+        /// <param name="reason"></param>
+        /// <returns></returns>
         public bool Start(out string reason)
         {
             reason = string.Empty;

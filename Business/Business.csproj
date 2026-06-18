@@ -56,7 +56,7 @@
     </Reference>
     <Reference Include="LT.SuperTranCockpit.Entity, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\ReferenceDLL\LT.SuperTranCockpit.Entity.dll</HintPath>
+      <HintPath>..\..\Output\LT.SuperTranCockpit.Entity.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="System" />

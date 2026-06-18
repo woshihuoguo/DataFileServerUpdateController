@@ -2,6 +2,7 @@
 using Amazon.S3.Transfer;
 using FluentFTP;
 using LT.Common.Logger;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -232,12 +233,21 @@ namespace Business
         /// 在远程服务器上创建文件夹
         /// </summary>
         /// <param name="rootUri">远程服务器已创建存在的根目录</param>
-        /// <param name="subUri">远程服务器需要创建的路径</param>   //"data/remote/path/"
-        /// <param name="username">远程服务器登录账号</param>
-        /// <param name="password">远程服务器登录密码</param>
-        public static void MakeDirs(string rootUri, string subUri, bool isFTPS/*, string username, string password*/)
+        /// <param name="destUri">远程服务器文件的绝对路径</param>
+        public static bool MakeDirs(string rootUri, string destUri, bool isFTPS/*, string username, string password*/)
         {
+            if (ExistDir(destUri, isFTPS))
+            {
+                return true;
+            }
+
+
+            string subUri= destUri.Substring(rootUri.Length);
+
+            //遍历子文件创建
+            bool makeDirResult = false;
             var dirs = subUri.Split('/').ToList();
+            dirs.Remove("");
             for (var i = 1; i <= dirs.Count; i++)
             {
                 var tmpDirs = string.IsNullOrEmpty(rootUri)
@@ -245,11 +255,13 @@ namespace Business
                     : new List<string> { rootUri };
                 tmpDirs.AddRange(dirs.GetRange(0, i));
                 var tmpUri = string.Join("/", tmpDirs);
-                MakeDir(tmpUri, isFTPS);
+                makeDirResult=MakeDir(tmpUri, isFTPS);
             }
+
+            return makeDirResult ? true : false;
         }
 
-        public static void MakeDir(string uri, bool isFTPS/*, string username, string password*/)
+        public static bool MakeDir(string uri, bool isFTPS/*, string username, string password*/)
         {
             try
             {
@@ -257,7 +269,7 @@ namespace Business
                 if (ExistDir(uri, isFTPS))
                 {
                     Logger.Log("Debug", $"URI{uri}已经存在,创建下一目录");
-                    return;
+                    return true;
                 }
 
                 var request = (FtpWebRequest)WebRequest.Create(uri);//new Uri(uri));
@@ -284,10 +296,14 @@ namespace Business
                     var success = response.StatusCode == FtpStatusCode.PathnameCreated;
                     Logger.Log("Debug", $"{uri}创建uri{(success ? "成功" : "失败")}，{response.StatusDescription}");
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
                 Logger.Log("Debug", $"{uri}创建uri失败，{ex.Message}");
+
+                return false;
             }
         }
 
@@ -322,14 +338,18 @@ namespace Business
                 }
                 using (var response = (FtpWebResponse)request.GetResponse())
                 {
-                    var success = response.StatusCode == FtpStatusCode.DataAlreadyOpen;
-                    Logger.Log("Debug", $"{uri}打开{(success ? "成功" : "失败")}，{response.StatusDescription}");
+                    //var success = response.StatusCode == FtpStatusCode.DataAlreadyOpen;
+                    var success =
+    response.StatusCode == FtpStatusCode.OpeningData ||
+    response.StatusCode == FtpStatusCode.DataAlreadyOpen ||
+    response.StatusCode == FtpStatusCode.ClosingData;
+                    Logger.Log("Debug", $"ListDirectory：{uri}{(success ? "成功" : "失败")}，{response.StatusDescription}");
                     return success;
                 }
             }
             catch (Exception ex)
             {
-                Logger.Log("Debug", $"{uri}打开失败，{ex.Message}");
+                Logger.Log("Debug", $"ListDirectory：{uri} {ex.Message}");
                 return false;
             }
         }
@@ -464,7 +484,7 @@ namespace Business
                 using (var fileStream = new FileStream(filePathLocal, FileMode.Open, FileAccess.Read))
                 {
                     uploadResult = ftpClient.UploadStream(fileStream, remoteFileName, FtpRemoteExists.Skip);
-                }                
+                }
 
                 ftpClient.Disconnect();
                 ftpClient.Dispose();

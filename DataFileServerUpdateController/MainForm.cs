@@ -27,12 +27,12 @@ namespace DataFileServerUpdateController
         private void MainForm_Load(object sender, EventArgs e)
         {
             //this.Text += " v" + Application.ProductVersion;
-            this.Text = string.Format(@"DFS v" + Application.ProductVersion); 
+            this.Text = string.Format(@"DFS v" + Application.ProductVersion);
             Logger.Log("Process", $"DFS软件v{Application.ProductVersion}启动");
 
             if (Initial(out string reason) == false)
             {
-                MessageBox.Show($"系统初始化发生异常，即将自动退出，原因：{reason}","错误");
+                MessageBox.Show($"系统初始化发生异常，即将自动退出，原因：{reason}", "错误");
                 Application.Exit();
             }
             logViewer1.Start("Process");
@@ -84,6 +84,7 @@ namespace DataFileServerUpdateController
                         business.SetConfig(serviceConfig);
                     }
 
+                    /* dfs咱们不连接PLC
                     var serviceThread = new Thread(() =>
                     {
                         if (string.IsNullOrEmpty(baseConfig.PlcProtocol) == false &&
@@ -105,24 +106,32 @@ namespace DataFileServerUpdateController
                                 Logger.Log("Debug", "PLC类型配置错误");
                             }
                         }
-                        
+
+                        business.Start();
+                    });
+                    serviceThread.Start();
+                    */
+
+                    var serviceThread = new Thread(() =>
+                    {
                         business.Start();
                     });
                     serviceThread.Start();
                 }
 
                 Frame.Frame.Instance.SystemConfig = baseConfig;
-                //如果PLC心跳开启，尝试连接PLC
+
+                /*如果PLC心跳开启，尝试连接PLC
                 if (baseConfig.PlcHeartBeatEnable && string.IsNullOrEmpty(baseConfig.PlcProtocol) == false &&
                     string.IsNullOrEmpty(baseConfig.PlcIp) == false && baseConfig.PlcPort > 0)
                 {
                     if (Enum.TryParse(baseConfig.PlcProtocol, out PLCProtocolType protocolType))
                     {
-                        if(plcCommunicator.Initial(protocolType, baseConfig.PlcIp, baseConfig.PlcPort, out reason) == false)
+                        if (plcCommunicator.Initial(protocolType, baseConfig.PlcIp, baseConfig.PlcPort, out reason) == false)
                         {
                             return false;
                         }
-                        if(plcCommunicator.Start(out reason) == false)
+                        if (plcCommunicator.Start(out reason) == false)
                         {
                             return false;
                         }
@@ -133,7 +142,7 @@ namespace DataFileServerUpdateController
                         return false;
                     }
                 }
-                              
+                */
 
                 return true;
             }
@@ -157,7 +166,7 @@ namespace DataFileServerUpdateController
             form.Config = baseConfig;
             if (form.ShowDialog() == DialogResult.OK)
             {
-                if(JsonSerializerHelper<BaseConfig>.Save(baseConfig, out string reason))
+                if (JsonSerializerHelper<BaseConfig>.Save(baseConfig, out string reason))
                 {
                     MessageBox.Show("保存配置完成");
                 }

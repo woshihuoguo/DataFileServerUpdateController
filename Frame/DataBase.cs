@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Frame
 {
-    class DataBase : VerbOnStorage, IDisposable
+   public class DataBase : VerbOnStorage, IDisposable
     {
         public DataBase()
         {
@@ -58,8 +58,8 @@ namespace Frame
             contextType = StorageContextType.MySQL;
             ip = "127.0.0.1";
             catalog = "hivenms";
-            userName = "sa";
-            password = "1234";
+            userName = "root";
+            password = "123456";
 
             //生成配置
             var config = new StorageContextConfig(contextType, ip, catalog, userName, password, new TimeSpan(0, 0, 6));
