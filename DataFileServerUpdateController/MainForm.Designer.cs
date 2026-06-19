@@ -54,31 +54,31 @@
             this.业务配置ToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(1234, 36);
+            this.menuStrip1.Size = new System.Drawing.Size(1234, 33);
             this.menuStrip1.TabIndex = 0;
             this.menuStrip1.Text = "menuStrip1";
             // 
             // 配置ToolStripMenuItem
             // 
             this.配置ToolStripMenuItem.Name = "配置ToolStripMenuItem";
-            this.配置ToolStripMenuItem.Size = new System.Drawing.Size(104, 30);
+            this.配置ToolStripMenuItem.Size = new System.Drawing.Size(104, 29);
             this.配置ToolStripMenuItem.Text = "系统配置";
             this.配置ToolStripMenuItem.Click += new System.EventHandler(this.配置ToolStripMenuItem_Click);
             // 
             // 业务配置ToolStripMenuItem
             // 
             this.业务配置ToolStripMenuItem.Name = "业务配置ToolStripMenuItem";
-            this.业务配置ToolStripMenuItem.Size = new System.Drawing.Size(104, 30);
+            this.业务配置ToolStripMenuItem.Size = new System.Drawing.Size(104, 29);
             this.业务配置ToolStripMenuItem.Text = "业务配置";
             this.业务配置ToolStripMenuItem.Click += new System.EventHandler(this.业务配置ToolStripMenuItem_Click);
             // 
             // logViewer1
             // 
             this.logViewer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.logViewer1.Location = new System.Drawing.Point(0, 36);
-            this.logViewer1.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.logViewer1.Location = new System.Drawing.Point(0, 33);
+            this.logViewer1.Margin = new System.Windows.Forms.Padding(6);
             this.logViewer1.Name = "logViewer1";
-            this.logViewer1.Size = new System.Drawing.Size(1234, 747);
+            this.logViewer1.Size = new System.Drawing.Size(1234, 750);
             this.logViewer1.TabIndex = 1;
             // 
             // contextMenuStrip
@@ -122,7 +122,7 @@
             // 
             this.checkBoxPasue.Appearance = System.Windows.Forms.Appearance.Button;
             this.checkBoxPasue.Location = new System.Drawing.Point(1122, 40);
-            this.checkBoxPasue.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.checkBoxPasue.Margin = new System.Windows.Forms.Padding(4);
             this.checkBoxPasue.Name = "checkBoxPasue";
             this.checkBoxPasue.Size = new System.Drawing.Size(94, 44);
             this.checkBoxPasue.TabIndex = 3;
@@ -140,7 +140,7 @@
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "ICW DFS数据上传辅助工具";

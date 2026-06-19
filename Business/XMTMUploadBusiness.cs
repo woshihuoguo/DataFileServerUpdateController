@@ -1,4 +1,5 @@
 ﻿using Business;
+using BusinessTest;
 using Frame;
 using LT.Common.Logger;
 using LT.Common.Net;
@@ -187,17 +188,6 @@ namespace Business
                     }
                     #endregion
 
-                    /* NO NEED 
-                    #region 根据UniqueId 去数据表 Process_result 表中查询 AOI检测 和 外观检测 的结果
-                    if (DateBaseOperation.DateBaseOperation.GetProcessResultEntityFromUniqueId(inspectSummary.UniqueId,
-                      out List<ProcessResultEntity> processResults, out reason) == false)
-                    {
-                        processResults = new List<ProcessResultEntity>();
-                        Logger.Log("Process", $"找不到产品{PannelID}的Process_result 结果");
-                    }
-                    #endregion        
-                    */
-
                     #region 完成数据查询,输出日志
                     Logger.Log("Process", $"完成产品{PannelID}的数据查询，检测结果{inspectSummary.Result}，缺陷数量{surfaceDects.Count}");
                     #endregion
@@ -206,7 +196,7 @@ namespace Business
 
                     #region 2. 构建上传数据模型
                     string panelId = PannelID;
-                    string endTime = inspectSummary.StopTime.Value.ToString("yyyyMMddHHmmss");
+                    string endTime = inspectSummary?.StopTime.Value.ToString("yyyyMMddHHmmss") ?? "";
                     string currentDate = DateTime.Now.ToString("yyyyMMdd");
                     string currentMonth = DateTime.Now.ToString("MM");
                     string currentDay = DateTime.Now.ToString("dd");
@@ -267,7 +257,7 @@ namespace Business
                     if (!string.IsNullOrEmpty(xmlRemoteDirA))
                     {
                         bool result = FtpHelper.MakeDirs(config.RootPath, xmlRemoteDirA, false);
-                        if(result==false)
+                        if (result == false)
                         {
                             Logger.Log("Error", $"远程服务器创建目录：{xmlRemoteDirA} 目录失败！！！");
                             continue;
@@ -275,7 +265,7 @@ namespace Business
                     }
                     if (!string.IsNullOrEmpty(xmlRemoteDirB))
                     {
-                        bool result= FtpHelper.MakeDirs(config.RootPath, xmlRemoteDirB, false);
+                        bool result = FtpHelper.MakeDirs(config.RootPath, xmlRemoteDirB, false);
                         if (result == false)
                         {
                             Logger.Log("Error", $"远程服务器创建目录：{xmlRemoteDirB} 目录失败！！！");
@@ -298,7 +288,7 @@ namespace Business
                     #region 6. 如果存在缺陷，上传图片文件
                     bool imageUploadOk = true;
 
-                    if (surfaceDects.Count > 0)
+                    if (surfaceDects.Count > 10000000)  //暂不上传图像
                     {
                         // 创建图片远程目录
                         //CreateFolders(_imgUploadRootPath, imgFolderLevels);
@@ -309,19 +299,19 @@ namespace Business
                             continue;
                         }
 
-                        // 上传缺陷小图
+                        // 上传缺陷小图(CropImage)
                         if (!UploadDefectImages(inspectSummary, surfaceDects, imgRemoteBasePath, endTime, ref reason))
                         {
-                            Logger.Log("Error", $"缺陷小图上传失败：{reason}");
+                            Logger.Log("Error", $"缺陷小图(CropImage)上传失败：{reason}");
                             imageUploadOk = false;
                         }
 
-                        //// 上传九宫格图片
-                        //if (!UploadMarkImage(inspectSummary, inspection, imgRemoteBasePath, endTime, imgFolderLevels, ref reason))
-                        //{
-                        //    Logger.Log("Error", $"九宫格图片上传失败：{reason}");
-                        //    imageUploadOk = false;
-                        //}
+                        // 原图(ORGImage)
+                        if (!UploadMarkImage(inspectSummary, surfaceResult, imgRemoteBasePath, endTime, imgFolderLevels, ref reason))
+                        {
+                            Logger.Log("Error", $"原图(ORGImage)上传失败：{reason}");
+                            imageUploadOk = false;
+                        }
                     }
 
                     if (!imageUploadOk)
@@ -347,6 +337,7 @@ namespace Business
                     #region SysId更新
                     Logger.Log("Process", $"产品{panelId}上传流程全部完成");
                     currentSysId = inspectSummary.SysId;
+                    currentSysId++;
                     Save();
                     #endregion
                 }
@@ -364,11 +355,7 @@ namespace Business
         private PANEL BuildPanelModel(InspectSummaryEntity inspectSummary, List<ICW_LCD_SurfaceDefectEntity> aoiDefects, string endTime)
         {
             string panelId = PannelID;
-            //string startTime = inspectSummary.StartTime.Value.ToString("yyyyMMddHHmmss");
-            string startTime = (inspectSummary.StartTime == null
-    ? DateTime.Now
-    : inspectSummary.StartTime.Value)
-    .ToString("yyyyMMddHHmmss");
+            string startTime = inspectSummary.StartTime.Value.ToString("yyyyMMddHHmmss");
             string judgeResult = (inspectSummary.Result == "OK") ? "G" : "N";
             string defectReason = inspectSummary.Code ?? string.Empty;
 
@@ -394,15 +381,19 @@ namespace Business
                 {
                     AP_INFO = new AP_INFO
                     {
-                        PROC = new PROC(),
-                        MACHINE = new MACHINE(),
-                        TIME = new TIME(),
-                        OPERATOR = new OPERATOR(),
-                        JUDGE = new JUDGE(),
-                        REASON = new REASON(),
-                        WORKTABLE = new WORKTABLE(),
-                        TYPE = new TYPE(),
-                        GRID = new GRID()
+                        PROC = new PROC { FA = _procId },
+                        MACHINE = new MACHINE { FA = _eqpUnitId },
+                        TIME = new TIME { FA = startTime },
+                        OPERATOR = new OPERATOR { FA = _operatorLa },
+                        JUDGE = new JUDGE { FA = judgeResult },
+
+                        REASON = new REASON
+                        {
+                            FA_FINAL = judgeResult == "G" ? "OK" : (defectReason ?? "UNKNOWN")
+                        },
+
+                        WORKTABLE = new WORKTABLE { FA = (judgeResult == "G") ? "1" : "7" },
+                        TYPE = new TYPE()
                     },
                     JUDGE_INFO = new JUDGE_INFO
                     {
@@ -412,22 +403,18 @@ namespace Business
                             REASON = defectReason
                         }
                     },
-                    AOI_MAP_IMAGE = new AOI_MAP_IMAGE
+                    RECIPE=new RECIPE
                     {
-                        BACK2_IMAGE_1 = new AOI_IMAGE(),
-                        BACK3_IMAGE_1 = new AOI_IMAGE(),
-                        BACK3_IMAGE_2 = new AOI_IMAGE(),
-                        BACK3_IMAGE_3 = new AOI_IMAGE(),
-                        FRONT1_IMAGE_1 = new AOI_IMAGE(),
-                        FRONT2_IMAGE_1 = new AOI_IMAGE(),
-                        FRONT3_IMAGE_1 = new AOI_IMAGE()
+                        CLASSIFY=new CLASSIFY
+                        {
+                            FA=this._procId,
+                        },
+                        RECIPE_NODE=new RECIPE_NODE
+                        {
+                            FA=_eqpUnitId,
+                            FA_GIB=""
+                        }
                     },
-                    RECIPE = new RECIPE
-                    {
-                        CLASSIFY = new CLASSIFY(),
-                        RECIPE_NODE = new RECIPE_NODE()
-                    },
-
                     DEFECT_NO = new DEFECT_NO { TOTAL = aoiDefects.Count }
                 },
 
@@ -437,59 +424,59 @@ namespace Business
                 }
             };
 
-            // LA_R 动态无限生成
-            //if (aoiDefects != null && aoiDefects.Count > 0)
-            //{
-            //    var doc = new XmlDocument();
-            //    var attributes = new List<XmlAttribute>();
+            // FA_R 动态无限生成
+            if (aoiDefects != null && aoiDefects.Count > 0)
+            {
+                var doc = new XmlDocument();
+                var attributes = new List<XmlAttribute>();
 
-            //    for (int i = 0; i < aoiDefects.Count; i++)
-            //    {
-            //        string code = aoiDefects[i].Code_AOI ?? inspectSummary.Code ?? "";
-            //        var attr = doc.CreateAttribute($"LA_R{i + 1}");
-            //        attr.Value = code;
-            //        attributes.Add(attr);
-            //    }
+                for (int i = 0; i < aoiDefects.Count; i++)
+                {
+                    string code = aoiDefects[i].Code_AOI ?? inspectSummary.Code ?? "";
+                    var attr = doc.CreateAttribute($"FA_R{i + 1}");
+                    attr.Value = code;
+                    attributes.Add(attr);
+                }
 
-            //    panel.BODY.AP_INFO.REASON.DynamicAttributes = attributes.ToArray();
-            //}
+                panel.BODY.AP_INFO.REASON.DynamicAttributes = attributes.ToArray();
+            }
 
 
             // 生成缺陷（每个缺陷 1 张图 ）
-            //foreach (var d in aoiDefects)
-            //{
-            //    var imgList = new List<IMG>();
+            foreach (var d in aoiDefects)
+            {
+                var imgList = new List<IMG>();
 
-            //    int imageCount = 1;
-            //    for (int seq = 1; seq <= imageCount; seq++)
-            //    {
-            //        string imgName = $"{panelId}_{_eqpUnitId}_{_procId}_{d.Pos_x:0}_{d.Pos_y:0}_{judgeResult}_{(inspectSummary.Code ?? string.Empty)}_{d.DefIndex + 1}_{seq}.JPG";
-            //        imgList.Add(new IMG { SEQ = seq, NAME = imgName });
-            //    }
+                int imageCount = 1;
+                for (int seq = 1; seq <= imageCount; seq++)
+                {
+                    string imgName = $"{panelId}_{_eqpUnitId}_{_procId}_{d.Pos_x:0}_{d.Pos_y:0}_{judgeResult}_{(inspectSummary.Code ?? string.Empty)}_{d.DefIndex + 1}_{seq}.JPG";
+                    imgList.Add(new IMG { SEQ = seq, NAME = imgName });
+                }
 
-            //    var defect = new DEFECT
-            //    {
-            //        SHOP = "FA",
-            //        DEF_NO = d.DefIndex + 1,
-            //        PNL_START_TIME = startTime,
-            //        PNL_END_TIME = endTime,
-            //        PROC_ID = _procId,
-            //        MACHINE_ID = _eqpUnitId,
-            //        JUDGE = judgeResult,
-            //        //REASON = d.Code_AOI ?? (inspectSummary.Code ?? string.Empty),
-            //        //CLASSIFY = d.DefName_AOI ?? (inspectSummary.CodeName ?? string.Empty),
-            //        IMAGE_FILE_NO = imageCount,
-            //        IMG = imgList
-            //    };
+                var defect = new DEFECT
+                {
+                    SHOP = "FA",
+                    DEF_NO = d.DefIndex + 1,
+                    PNL_START_TIME = startTime,
+                    PNL_END_TIME = endTime,
+                    PROC_ID = _procId,
+                    MACHINE_ID = _eqpUnitId,
+                    JUDGE = judgeResult,
+                    REASON = d.Code_AOI ?? (inspectSummary.Code ?? string.Empty),
+                    CLASSIFY = d.CusDefName ?? (inspectSummary.Code ?? string.Empty),
+                    IMAGE_FILE_NO = imageCount,
+                    IMG = imgList
+                };
 
-            //    // 缺陷属性
-            //    if (surfaceResult_AOI != null && !string.IsNullOrEmpty(surfaceResult_AOI.XMLInfo))
-            //    {
-            //        FillFullDefectData(defect, d);
-            //    }
+                // 缺陷属性
+                if (surfaceResult_AOI != null && !string.IsNullOrEmpty(surfaceResult_AOI.XMLInfo))
+                {
+                    FillFullDefectData(defect, d);
+                }
 
-            //    panel.DEFECT_INFO.DEFECT.Add(defect);
-            //}
+                panel.DEFECT_INFO.DEFECT.Add(defect);
+            }
 
             return panel;
         }
@@ -499,105 +486,48 @@ namespace Business
         /// </summary>
         private string SerializePanelToXml(PANEL panel)
         {
-            //构建FileName
             string endTime = panel.HEADER.INSP_TIME.END;
             string datePart = endTime.Substring(0, 8);    // YYYYMMDD
             string timePart = endTime.Substring(8, 6);    // HHMMSS
-            //string fileName = $"{panel.HEADER.PANEL_ID}_{_procId}_{datePart}_{timePart}.{_eqpUnitId}".ToUpper();
-            string fileName = "testxml".ToUpper();
-
-            #region 太绕了这个版本
-            ////<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-            //var doc = new XmlDocument();
-            //var xmlDeclaration = doc.CreateXmlDeclaration("1.0", "UTF-8", "yes");
-            //doc.AppendChild(xmlDeclaration);
-
-            ////<DEFECT_FILE NAME=fileName>
-            ////</ DEFECT_FILE >
-            //var root = doc.CreateElement("DEFECT_FILE");
-            ////XmlAttribute attr = doc.CreateAttribute("NAME");
-            ////attr.Value = fileName;
-            ////root.Attributes.Append(attr);
-            //root.SetAttribute("NAME", fileName);
-            //doc.AppendChild(root);
-
-            ////创建 XML 序列化器，并去掉默认命名空间
-            //var ns = new XmlSerializerNamespaces();
-            //ns.Add("", "");
-            //var serializer = new XmlSerializer(typeof(PANEL));
-
-            //using (var ms = new MemoryStream())
-            //{
-            //    serializer.Serialize(ms, panel, ns);
-            //    ms.Position = 0;
-            //    var panelDoc = new XmlDocument();
-            //    panelDoc.Load(ms);
-
-            //    doc.DocumentElement.AppendChild(doc.ImportNode(panelDoc.DocumentElement, true));
-            //}
-
-            //var sb = new StringBuilder();
-            //var settings = new XmlWriterSettings
-            //{
-            //    OmitXmlDeclaration = true,
-            //    Indent = true,
-            //    Encoding = Encoding.UTF8
-            //};
-
-            //using (var writer = XmlWriter.Create(sb, settings))
-            //{
-            //    doc.WriteTo(writer);
-            //}
-
-            //return $"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>{Environment.NewLine}{sb}";
-            #endregion
+            string fileName = $"{panel.HEADER.PANEL_ID}_{_procId}_{datePart}_{timePart}.{_eqpUnitId}".ToUpper();
 
             var doc = new XmlDocument();
+            var xmlDeclaration = doc.CreateXmlDeclaration("1.0", "UTF-8", "yes");
+            doc.AppendChild(xmlDeclaration);
 
-            // XML声明
-            doc.AppendChild(doc.CreateXmlDeclaration("1.0", "UTF-8", "yes"));
-
-            // 根节点
             var root = doc.CreateElement("DEFECT_FILE");
-            root.SetAttribute("NAME", fileName);
+            XmlAttribute attr = doc.CreateAttribute("NAME");
+            attr.Value = fileName;
+            root.Attributes.Append(attr);
             doc.AppendChild(root);
 
-            // 去除默认命名空间
             var ns = new XmlSerializerNamespaces();
             ns.Add("", "");
-
-            // 序列化 PANEL
             var serializer = new XmlSerializer(typeof(PANEL));
 
             using (var ms = new MemoryStream())
             {
                 serializer.Serialize(ms, panel, ns);
                 ms.Position = 0;
-
                 var panelDoc = new XmlDocument();
                 panelDoc.Load(ms);
-
-                root.AppendChild(
-                    doc.ImportNode(panelDoc.DocumentElement, true)
-                );
+                doc.DocumentElement.AppendChild(doc.ImportNode(panelDoc.DocumentElement, true));
             }
 
-            // 输出 UTF-8 XML
+            var sb = new StringBuilder();
             var settings = new XmlWriterSettings
             {
+                OmitXmlDeclaration = true,
                 Indent = true,
                 Encoding = Encoding.UTF8
             };
 
-            using (var ms = new MemoryStream())
+            using (var writer = XmlWriter.Create(sb, settings))
             {
-                using (var writer = XmlWriter.Create(ms, settings))
-                {
-                    doc.Save(writer);
-                }
-
-                return Encoding.UTF8.GetString(ms.ToArray());
+                doc.WriteTo(writer);
             }
+
+            return $"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>{Environment.NewLine}{sb}";
         }
 
         /// <summary>
@@ -625,287 +555,290 @@ namespace Business
         /// </summary>
         private void FillFullDefectData(DEFECT defect, ICW_LCD_SurfaceDefectEntity d)
         {
-            //#region 从AoiDefect表取
-            //defect.G_POSX = (int)d.Pos_x;
-            //defect.G_POSY = (int)d.Pos_y;
-            //defect.G_WIDTH = d.Pos_width;
-            //defect.G_HEIGHT = d.Pos_height;
-            //defect.G_GRAYMAX = d.Grayscale;
-            //defect.G_GRAYMAX_ORG = d.Grayscale_BK;
-            //defect.G_DEFECTSIZE = d.TrueSize;
-            //defect.G_DEFECTID = d.DefectIndex + 1;
-            //defect.G_PTNNO = d.PatternID;
+            #region 从AoiDefect表取
+            defect.G_POSX = (int)d.Pos_x;
+            defect.G_POSY = (int)d.Pos_y;
+            defect.G_WIDTH = d.Pos_width;
+            defect.G_HEIGHT = d.Pos_height;
+            defect.G_GRAYMAX = 0;
+            defect.G_GRAYMAX_ORG = 0;
+            defect.G_DEFECTSIZE = 0;
+            defect.G_DEFECTID = d.DefIndex + 1;
+            defect.G_PTNNO = d.PatternID;
 
-            //// 缺陷坐标
-            //defect.G_DFTSX = (int)d.Pos_x;
-            //defect.G_DFTSY = (int)d.Pos_y;
-            //defect.G_DFTEX = (int)(d.Pos_x + d.Pos_width);
-            //defect.G_DFTEY = (int)(d.Pos_y + d.Pos_height);
+            // 缺陷坐标
+            defect.G_DFTSX = (int)d.Pos_x;
+            defect.G_DFTSY = (int)d.Pos_y;
+            defect.G_DFTEX = (int)(d.Pos_x + d.Pos_width);
+            defect.G_DFTEY = (int)(d.Pos_y + d.Pos_height);
 
-            //// 颜色类型
-            //switch (d.PatternName)
-            //{
-            //    case "Red": defect.G_PTNTYPE = 1; break;
-            //    case "Green": defect.G_PTNTYPE = 2; break;
-            //    case "Blue": defect.G_PTNTYPE = 3; break;
-            //    default: defect.G_PTNTYPE = 0; break;
-            //}
-            //#endregion
+            // 颜色类型
+            switch (d.PatternName)
+            {
+                case "Red": defect.G_PTNTYPE = 1; break;
+                case "Green": defect.G_PTNTYPE = 2; break;
+                case "Blue": defect.G_PTNTYPE = 3; break;
+                default: defect.G_PTNTYPE = 0; break;
+            }
+            #endregion
 
-            //#region 从 ivs_lcd_inspectionresult 拿      
-            //if (surfaceResult_AOI != null)
-            //{
-            //    // 直接拿面板物理尺寸
-            //    defect.G_REALPANELX = surfaceResult_AOI.PanelPhysicalXLen;
-            //    defect.G_REALPANELY = surfaceResult_AOI.PanelPhysicalYLen;
+            #region 从 ivs_lcd_inspectionresult 拿      
+            if (surfaceResult_AOI != null)
+            {
+                // 直接拿面板物理尺寸
+                defect.G_REALPANELX = surfaceResult_AOI.PanelPhysicalXLen;
+                defect.G_REALPANELY = surfaceResult_AOI.PanelPhysicalYLen;
 
-            //    //缺陷物理 坐标(计算 G_REALX 和 G_REALY)
-            //    double gridX = surfaceResult_AOI.GridImageXLen; 
-            //    double gridY = surfaceResult_AOI.GridImageYLen; 
-            //    // 防止除以0
-            //    if (gridX > 0)
-            //    {
-            //        defect.G_REALX = (d.Pos_x / gridX) * defect.G_REALPANELX;
-            //    }
-            //    else
-            //    {
-            //        defect.G_REALX = 0;
-            //    }
-            //    if (gridY > 0)
-            //    {
-            //        defect.G_REALY = (d.Pos_y / gridY) * defect.G_REALPANELY;
-            //    }
-            //    else
-            //    {
-            //        defect.G_REALY = 0;
-            //    }
-            //}
-            //else
-            //{
-            //    // 如没查到数据，保持0
-            //    defect.G_REALPANELX = 0;
-            //    defect.G_REALPANELY = 0;
-            //    defect.G_REALX = 0;
-            //    defect.G_REALY = 0;
-            //}
-            //#endregion
+                //缺陷物理 坐标(计算 G_REALX 和 G_REALY)
+                //double gridX = surfaceResult_AOI.GridImageXLen;
+                //double gridY = surfaceResult_AOI.GridImageYLen;
 
-            //#region 以下：没有值就 = 0 
-            //// G 组剩余
-            //defect.G_AREAOVERTHRES = 0;
-            //defect.G_AVGGRAYLEVELH = 0;
-            //defect.G_AVGGRAYLEVELH_ORG = 0;
-            //defect.G_AVGGRAYLEVELL = 0;
-            //defect.G_AVGGRAYLEVELL_ORG = 0;
-            //defect.G_DEFECTTYPE = 0;
-            //defect.G_GRAYMIN = 0;
-            //defect.G_GRAYMIN_ORG = 0;
-            //defect.G_SHOTNO = 0;
-            //defect.G_VPNO = 0;  
-            //defect.G_ZONENO = 0;
-            //defect.G_CAMNO = 0;
-            //defect.G_CELLNO = 0;
-            //defect.G_GRIDNUM = 0;
-            //defect.G_OPTICTYPE = 0;
-            //defect.GRAYLEVELL_RATE = 0;
+                double gridX = 0;
+                double gridY = 0;
+                // 防止除以0
+                if (gridX > 0)
+                {
+                    defect.G_REALX = (d.Pos_x / gridX) * defect.G_REALPANELX;
+                }
+                else
+                {
+                    defect.G_REALX = 0;
+                }
+                if (gridY > 0)
+                {
+                    defect.G_REALY = (d.Pos_y / gridY) * defect.G_REALPANELY;
+                }
+                else
+                {
+                    defect.G_REALY = 0;
+                }
+            }
+            else
+            {
+                // 如没查到数据，保持0
+                defect.G_REALPANELX = 0;
+                defect.G_REALPANELY = 0;
+                defect.G_REALX = 0;
+                defect.G_REALY = 0;
+            }
+            #endregion
 
-            //// L
-            //defect.L_LDPEAKDIFFERENCE = 0;
-            //defect.L_LDWIDTH = 0;
+            #region 以下：没有值就 = 0 
+            // G 组剩余
+            defect.G_AREAOVERTHRES = 0;
+            defect.G_AVGGRAYLEVELH = 0;
+            defect.G_AVGGRAYLEVELH_ORG = 0;
+            defect.G_AVGGRAYLEVELL = 0;
+            defect.G_AVGGRAYLEVELL_ORG = 0;
+            defect.G_DEFECTTYPE = 0;
+            defect.G_GRAYMIN = 0;
+            defect.G_GRAYMIN_ORG = 0;
+            defect.G_SHOTNO = 0;
+            defect.G_VPNO = 0;
+            defect.G_ZONENO = 0;
+            defect.G_CAMNO = 0;
+            defect.G_CELLNO = 0;
+            defect.G_GRIDNUM = 0;
+            defect.G_OPTICTYPE = 0;
+            defect.GRAYLEVELL_RATE = 0;
 
-            //// M
-            //defect.M_COMPRESSION = 0;
-            //defect.M_DEFOCUS_INDEX = 0;
-            //defect.M_INTENSITY = 0;
-            //defect.M_LEVEL_DATA = 0;
-            //defect.M_N1 = 0;
-            //defect.M_N2 = 0;
-            //defect.M_N3 = 0;
-            //defect.M_N3_NEW = 0;
-            //defect.M_N4 = 0;
-            //defect.M_N5 = 0;
-            //defect.M_NLD_AREA = 0;
-            //defect.M_NLD_AVG = 0;
-            //defect.M_NLD_AVG_DIFF = 0;
-            //defect.M_NLD_DIFF = 0;
-            //defect.M_NLD_REF = 0;
-            //defect.M_NLD_SHOT2_AVG_DIFF = 0;
-            //defect.M_NLD_SHOT2_NLD_VAR_DST = 0;
-            //defect.M_NLD_SHOT2_VAR = 0;
-            //defect.M_NLD_TAR = 0;
-            //defect.M_NLD_VAR = 0;
-            //defect.M_ROI_TYPE = 0;
-            //defect.M_BVALUEH = 0;
-            //defect.M_BVALUEL = 0;
-            //defect.M_BOX40_AVGGRAYLEVEL = 0;
-            //defect.M_BOX40_MAXVAL = 0;
-            //defect.M_BOX40_MINVAL = 0;
-            //defect.M_BOX40_STDDEVIATION = 0;
-            //defect.M_GVALUEH = 0;
-            //defect.M_GVALUEL = 0;
-            //defect.M_LVALUEH = 0;
-            //defect.M_LVALUEL = 0;
-            //defect.M_POCB_DEFECT = 0;
-            //defect.M_RVALUEH = 0;
-            //defect.M_RVALUEL = 0;
-            //defect.M_UVALUEH = 0;
-            //defect.M_UVALUEL = 0;
-            //defect.M_VVALUEH = 0;
-            //defect.M_VVALUEL = 0;
+            // L
+            defect.L_LDPEAKDIFFERENCE = 0;
+            defect.L_LDWIDTH = 0;
 
-            //// P
-            //defect.P_AVGGRAYLEVELH_148 = 0;
-            //defect.P_AVGGRAYLEVELH_B = 0;
-            //defect.P_AVGGRAYLEVELH_G = 0;
-            //defect.P_AVGGRAYLEVELH_R = 0;
-            //defect.P_AVGGRAYLEVELL_108 = 0;
-            //defect.P_AVGGRAYLEVELL_B = 0;
-            //defect.P_AVGGRAYLEVELL_G = 0;
-            //defect.P_AVGGRAYLEVELL_PRC = 0;
-            //defect.P_AVGGRAYLEVELL_R = 0;
-            //defect.P_BRIGHT_M_LINK_CNT = 0;
-            //defect.P_DARK_M_LINK_RGB = 0;
-            //defect.P_DARK_M_LINK_CNT = 0;
-            //defect.P_NEAR_PIXEL_VAL = 0;
-            //defect.P_OMIT_AVG_ORG = 0;
-            //defect.P_OMIT_AVG_PRC = 0;
-            //defect.P_OMIT_MAX_ORG = 0;
-            //defect.P_OMIT_MAX_PRC = 0;
-            //defect.P_PIXELINFO = 0;
-            //defect.P_PIXEL_PITCH = 0;
-            //defect.P_PIXEL_SIZE_X = 0;
-            //defect.P_PIXEL_SIZE_Y = 0;
-            //defect.P_SHARE_AVGGRAYLEVELL_ORG_B = 0;
-            //defect.P_SHARE_AVGGRAYLEVELL_ORG_G = 0;
-            //defect.P_SHARE_AVGGRAYLEVELL_ORG_R = 0;
-            //defect.P_SHARE_DARK_M_LINK_CNT_B = 0;
-            //defect.P_SHARE_DARK_M_LINK_CNT_G = 0;
-            //defect.P_SHARE_DARK_M_LINK_CNT_R = 0;
-            //defect.P_SHARE_NEAR_PIXEL_VAL_B = 0;
-            //defect.P_SHARE_NEAR_PIXEL_VAL_G = 0;
-            //defect.P_SHARE_NEAR_PIXEL_VAL_R = 0;
-            //defect.P_SHARE_POSX_B = 0;
-            //defect.P_SHARE_POSX_G = 0;
-            //defect.P_SHARE_POSX_R = 0;
-            //defect.P_SHARE_POSY_B = 0;
-            //defect.P_SHARE_POSY_G = 0;
-            //defect.P_SHARE_POSY_R = 0;
-            //defect.P_HIGH_AREA_GRAYLEVEL_COUNT = 0;
-            //defect.P_LOW_AREA_GRAYLEVEL_COUNT = 0;
+            // M
+            defect.M_COMPRESSION = 0;
+            defect.M_DEFOCUS_INDEX = 0;
+            defect.M_INTENSITY = 0;
+            defect.M_LEVEL_DATA = 0;
+            defect.M_N1 = 0;
+            defect.M_N2 = 0;
+            defect.M_N3 = 0;
+            defect.M_N3_NEW = 0;
+            defect.M_N4 = 0;
+            defect.M_N5 = 0;
+            defect.M_NLD_AREA = 0;
+            defect.M_NLD_AVG = 0;
+            defect.M_NLD_AVG_DIFF = 0;
+            defect.M_NLD_DIFF = 0;
+            defect.M_NLD_REF = 0;
+            defect.M_NLD_SHOT2_AVG_DIFF = 0;
+            defect.M_NLD_SHOT2_NLD_VAR_DST = 0;
+            defect.M_NLD_SHOT2_VAR = 0;
+            defect.M_NLD_TAR = 0;
+            defect.M_NLD_VAR = 0;
+            defect.M_ROI_TYPE = 0;
+            defect.M_BVALUEH = 0;
+            defect.M_BVALUEL = 0;
+            defect.M_BOX40_AVGGRAYLEVEL = 0;
+            defect.M_BOX40_MAXVAL = 0;
+            defect.M_BOX40_MINVAL = 0;
+            defect.M_BOX40_STDDEVIATION = 0;
+            defect.M_GVALUEH = 0;
+            defect.M_GVALUEL = 0;
+            defect.M_LVALUEH = 0;
+            defect.M_LVALUEL = 0;
+            defect.M_POCB_DEFECT = 0;
+            defect.M_RVALUEH = 0;
+            defect.M_RVALUEL = 0;
+            defect.M_UVALUEH = 0;
+            defect.M_UVALUEL = 0;
+            defect.M_VVALUEH = 0;
+            defect.M_VVALUEL = 0;
 
-            //// Q
-            //defect.Q_DISPLAY_ROI = 0;
-            //defect.Q_ZONE1_MIN = 0;
-            //defect.Q_ZONE2_MIN = 0;
-            //defect.Q_ZONE3_MIN = 0;
+            // P
+            defect.P_AVGGRAYLEVELH_148 = 0;
+            defect.P_AVGGRAYLEVELH_B = 0;
+            defect.P_AVGGRAYLEVELH_G = 0;
+            defect.P_AVGGRAYLEVELH_R = 0;
+            defect.P_AVGGRAYLEVELL_108 = 0;
+            defect.P_AVGGRAYLEVELL_B = 0;
+            defect.P_AVGGRAYLEVELL_G = 0;
+            defect.P_AVGGRAYLEVELL_PRC = 0;
+            defect.P_AVGGRAYLEVELL_R = 0;
+            defect.P_BRIGHT_M_LINK_CNT = 0;
+            defect.P_DARK_M_LINK_RGB = 0;
+            defect.P_DARK_M_LINK_CNT = 0;
+            defect.P_NEAR_PIXEL_VAL = 0;
+            defect.P_OMIT_AVG_ORG = 0;
+            defect.P_OMIT_AVG_PRC = 0;
+            defect.P_OMIT_MAX_ORG = 0;
+            defect.P_OMIT_MAX_PRC = 0;
+            defect.P_PIXELINFO = 0;
+            defect.P_PIXEL_PITCH = 0;
+            defect.P_PIXEL_SIZE_X = 0;
+            defect.P_PIXEL_SIZE_Y = 0;
+            defect.P_SHARE_AVGGRAYLEVELL_ORG_B = 0;
+            defect.P_SHARE_AVGGRAYLEVELL_ORG_G = 0;
+            defect.P_SHARE_AVGGRAYLEVELL_ORG_R = 0;
+            defect.P_SHARE_DARK_M_LINK_CNT_B = 0;
+            defect.P_SHARE_DARK_M_LINK_CNT_G = 0;
+            defect.P_SHARE_DARK_M_LINK_CNT_R = 0;
+            defect.P_SHARE_NEAR_PIXEL_VAL_B = 0;
+            defect.P_SHARE_NEAR_PIXEL_VAL_G = 0;
+            defect.P_SHARE_NEAR_PIXEL_VAL_R = 0;
+            defect.P_SHARE_POSX_B = 0;
+            defect.P_SHARE_POSX_G = 0;
+            defect.P_SHARE_POSX_R = 0;
+            defect.P_SHARE_POSY_B = 0;
+            defect.P_SHARE_POSY_G = 0;
+            defect.P_SHARE_POSY_R = 0;
+            defect.P_HIGH_AREA_GRAYLEVEL_COUNT = 0;
+            defect.P_LOW_AREA_GRAYLEVEL_COUNT = 0;
 
-            //// T
-            //defect.T_ASYNC_1 = 0;
-            //defect.T_ASYNC_10 = 0;
-            //defect.T_ASYNC_2 = 0;
-            //defect.T_ASYNC_3 = 0;
-            //defect.T_ASYNC_4 = 0;
-            //defect.T_ASYNC_5 = 0;
-            //defect.T_ASYNC_6 = 0;
-            //defect.T_ASYNC_7 = 0;
-            //defect.T_ASYNC_8 = 0;
-            //defect.T_ASYNC_9 = 0;
-            //defect.T_ASYNC_INDEX = 0;
-            //defect.T_ASYNC_STD1 = 0;
-            //defect.T_ASYNC_STD10 = 0;
-            //defect.T_ASYNC_STD2 = 0;
-            //defect.T_ASYNC_STD3 = 0;
-            //defect.T_ASYNC_STD4 = 0;
-            //defect.T_ASYNC_STD5 = 0;
-            //defect.T_ASYNC_STD6 = 0;
-            //defect.T_ASYNC_STD7 = 0;
-            //defect.T_ASYNC_STD8 = 0;
-            //defect.T_ASYNC_STD9 = 0;
+            // Q
+            defect.Q_DISPLAY_ROI = 0;
+            defect.Q_ZONE1_MIN = 0;
+            defect.Q_ZONE2_MIN = 0;
+            defect.Q_ZONE3_MIN = 0;
 
-            //// U
-            //defect.U1_OMIT_AREA_PRC = 0;
-            //defect.U2_OMIT_AREA_PRC = 0;
-            //defect.U3_ASYNC_INDEX2 = 0;
-            //defect.U4_OMIT_WID = 0;
-            //defect.U5_OMIT_HGT = 0;
-            //defect.U_ANOTHER_OMIT_AREA = 0;
-            //defect.U_ANOTHER_OMIT_AVG_PRC = 0;
-            //defect.U_ANOTHER_OMIT_HGT = 0;
-            //defect.U_ANOTHER_OMIT_MAX_PRC = 0;
-            //defect.U_ANOTHER_OMIT_MIN_PRC = 0;
-            //defect.U_ANOTHER_OMIT_WID = 0;
-            //defect.U_OMIT_AREA = 0;
-            //defect.U_OMIT_HGT = 0;
-            //defect.U_OMIT_WID = 0;
+            // T
+            defect.T_ASYNC_1 = 0;
+            defect.T_ASYNC_10 = 0;
+            defect.T_ASYNC_2 = 0;
+            defect.T_ASYNC_3 = 0;
+            defect.T_ASYNC_4 = 0;
+            defect.T_ASYNC_5 = 0;
+            defect.T_ASYNC_6 = 0;
+            defect.T_ASYNC_7 = 0;
+            defect.T_ASYNC_8 = 0;
+            defect.T_ASYNC_9 = 0;
+            defect.T_ASYNC_INDEX = 0;
+            defect.T_ASYNC_STD1 = 0;
+            defect.T_ASYNC_STD10 = 0;
+            defect.T_ASYNC_STD2 = 0;
+            defect.T_ASYNC_STD3 = 0;
+            defect.T_ASYNC_STD4 = 0;
+            defect.T_ASYNC_STD5 = 0;
+            defect.T_ASYNC_STD6 = 0;
+            defect.T_ASYNC_STD7 = 0;
+            defect.T_ASYNC_STD8 = 0;
+            defect.T_ASYNC_STD9 = 0;
 
-            //// X 全部 0
-            //defect.X001_INSPTYPE = 0;
-            //defect.X002_OMIT_BLOB_AREA = 0;
-            //defect.X003_OMIT_BLOB_LX = 0;
-            //defect.X004_OMIT_BLOB_LY = 0;
-            //defect.X005_OMIT_BLOB_BOX = 0;
-            //defect.X008_NLD_LEFTNOTCHDIFF = 0;
-            //defect.X009_NLD_RIGHTNOTCHDIFF = 0;
-            //defect.X065_LABAREA = 0;
-            //defect.X066_LDGRAYMAX = 0;
-            //defect.X067_LDGRAYMIN = 0;
-            //defect.X106_FMM_STRENGTH = 0;
-            //defect.X107_FMM_AVGR = 0;
-            //defect.X108_FMM_AVGG = 0;
-            //defect.X109_FMM_AVGB = 0;
-            //defect.X110_FMM_L = 0;
-            //defect.X111_FMM_U = 0;
-            //defect.X112_FMM_V = 0;
-            //defect.X113_FMM_BASEL = 0;
-            //defect.X114_FMM_BASEU = 0;
-            //defect.X115_FMM_BASEV = 0;
-            //defect.X116_FMM_DEG = 0;
-            //defect.X117_FMM_SIZE = 0;
-            //defect.X118_FMM_HEI = 0;
-            //defect.X119_FMM_WID = 0;
-            //defect.X120_FMM_U_DIFF = 0;
-            //defect.X121_FMM_V_DIFF = 0;
-            //defect.X122_FMM_U_DIFF_GR = 0;
-            //defect.X123_FMM_U_DEV = 0;
-            //defect.X124_FMM_V_DEV = 0;
-            //defect.X125_FMM_U_DEV_GR = 0;
-            //defect.X126_FMM_STRENGTH = 0;
-            //defect.X127_FMM_U_DUV = 0;
-            //defect.X128_FMM_V_DUV = 0;
-            //defect.X129_FMM_U_COLORANGLE = 0;
-            //defect.X130_FMM_V_COLORANGLE = 0;
-            //defect.X137_CHANENL = 0;
-            //defect.X138_REDPRC = 0;
-            //defect.X139_GREENPRC = 0;
-            //defect.X140_BLUEPRC = 0;
-            //defect.X141_COLORDEG = 0;
-            //defect.X142_REDDIFF = 0;
-            //defect.X143_GREENDIFF = 0;
-            //defect.X144_BLUEDIFF = 0;
-            //defect.X145_FMM_T_REMAIN = 0;
-            //defect.X146_FMM_T_INTERSECTION = 0;
-            //defect.X147_FMM_MAXDIFFUV = 0;
-            //defect.X158_IQ_PROB1 = 0;
-            //defect.X159_IQ_PROB2 = 0;
-            //defect.X160_IQ_FLAG = 0;
-            //defect.X161_FMM_LINE_PROJ_MAX = 0;
-            //defect.X162_FMM_LINE_PROJ_MEAN = 0;
-            //defect.X163_FMM_STRENGTH_MAX10 = 0;
-            //defect.X164_FMM_STRENGTH_MIN10 = 0;
-            //defect.X165_FMM_U_DIFF_MAX = 0;
-            //defect.X166_FMM_U_DIFF_MIN = 0;
-            //defect.X167_FMM_V_DIFF_MAX = 0;
-            //defect.X168_FMM_V_DIFF_MIN = 0;
-            //defect.X200_SIYA_HORI_LD_GRIDMIN_CENTER = 0;
-            //defect.X201_SIYA_HORI_LD_GRIDMIN_DFT = 0;
-            //defect.X202_INSP_PROB_C1 = 0;
-            //defect.X203_INSP_PROB_C2 = 0;
-            //defect.X204_INSP_PROB_C3 = 0;
-            //defect.X205_INSP_PROB_C4 = 0;
-            //defect.X206_INSP_PROB_C5 = 0;
-            //defect.X207_INSP_PROB_C6 = 0;
-            //defect.X208_EDGE_GROUPING = 0;
-            //#endregion
+            // U
+            defect.U1_OMIT_AREA_PRC = 0;
+            defect.U2_OMIT_AREA_PRC = 0;
+            defect.U3_ASYNC_INDEX2 = 0;
+            defect.U4_OMIT_WID = 0;
+            defect.U5_OMIT_HGT = 0;
+            defect.U_ANOTHER_OMIT_AREA = 0;
+            defect.U_ANOTHER_OMIT_AVG_PRC = 0;
+            defect.U_ANOTHER_OMIT_HGT = 0;
+            defect.U_ANOTHER_OMIT_MAX_PRC = 0;
+            defect.U_ANOTHER_OMIT_MIN_PRC = 0;
+            defect.U_ANOTHER_OMIT_WID = 0;
+            defect.U_OMIT_AREA = 0;
+            defect.U_OMIT_HGT = 0;
+            defect.U_OMIT_WID = 0;
+
+            // X 全部 0
+            defect.X001_INSPTYPE = 0;
+            defect.X002_OMIT_BLOB_AREA = 0;
+            defect.X003_OMIT_BLOB_LX = 0;
+            defect.X004_OMIT_BLOB_LY = 0;
+            defect.X005_OMIT_BLOB_BOX = 0;
+            defect.X008_NLD_LEFTNOTCHDIFF = 0;
+            defect.X009_NLD_RIGHTNOTCHDIFF = 0;
+            defect.X065_LABAREA = 0;
+            defect.X066_LDGRAYMAX = 0;
+            defect.X067_LDGRAYMIN = 0;
+            defect.X106_FMM_STRENGTH = 0;
+            defect.X107_FMM_AVGR = 0;
+            defect.X108_FMM_AVGG = 0;
+            defect.X109_FMM_AVGB = 0;
+            defect.X110_FMM_L = 0;
+            defect.X111_FMM_U = 0;
+            defect.X112_FMM_V = 0;
+            defect.X113_FMM_BASEL = 0;
+            defect.X114_FMM_BASEU = 0;
+            defect.X115_FMM_BASEV = 0;
+            defect.X116_FMM_DEG = 0;
+            defect.X117_FMM_SIZE = 0;
+            defect.X118_FMM_HEI = 0;
+            defect.X119_FMM_WID = 0;
+            defect.X120_FMM_U_DIFF = 0;
+            defect.X121_FMM_V_DIFF = 0;
+            defect.X122_FMM_U_DIFF_GR = 0;
+            defect.X123_FMM_U_DEV = 0;
+            defect.X124_FMM_V_DEV = 0;
+            defect.X125_FMM_U_DEV_GR = 0;
+            defect.X126_FMM_STRENGTH = 0;
+            defect.X127_FMM_U_DUV = 0;
+            defect.X128_FMM_V_DUV = 0;
+            defect.X129_FMM_U_COLORANGLE = 0;
+            defect.X130_FMM_V_COLORANGLE = 0;
+            defect.X137_CHANENL = 0;
+            defect.X138_REDPRC = 0;
+            defect.X139_GREENPRC = 0;
+            defect.X140_BLUEPRC = 0;
+            defect.X141_COLORDEG = 0;
+            defect.X142_REDDIFF = 0;
+            defect.X143_GREENDIFF = 0;
+            defect.X144_BLUEDIFF = 0;
+            defect.X145_FMM_T_REMAIN = 0;
+            defect.X146_FMM_T_INTERSECTION = 0;
+            defect.X147_FMM_MAXDIFFUV = 0;
+            defect.X158_IQ_PROB1 = 0;
+            defect.X159_IQ_PROB2 = 0;
+            defect.X160_IQ_FLAG = 0;
+            defect.X161_FMM_LINE_PROJ_MAX = 0;
+            defect.X162_FMM_LINE_PROJ_MEAN = 0;
+            defect.X163_FMM_STRENGTH_MAX10 = 0;
+            defect.X164_FMM_STRENGTH_MIN10 = 0;
+            defect.X165_FMM_U_DIFF_MAX = 0;
+            defect.X166_FMM_U_DIFF_MIN = 0;
+            defect.X167_FMM_V_DIFF_MAX = 0;
+            defect.X168_FMM_V_DIFF_MIN = 0;
+            defect.X200_SIYA_HORI_LD_GRIDMIN_CENTER = 0;
+            defect.X201_SIYA_HORI_LD_GRIDMIN_DFT = 0;
+            defect.X202_INSP_PROB_C1 = 0;
+            defect.X203_INSP_PROB_C2 = 0;
+            defect.X204_INSP_PROB_C3 = 0;
+            defect.X205_INSP_PROB_C4 = 0;
+            defect.X206_INSP_PROB_C5 = 0;
+            defect.X207_INSP_PROB_C6 = 0;
+            defect.X208_EDGE_GROUPING = 0;
+            #endregion
         }
         #endregion
 
@@ -948,7 +881,7 @@ namespace Business
 
 
         /// <summary>
-        /// 上传九宫格图片
+        /// 上传原图
         /// </summary>
         private bool UploadMarkImage(InspectSummaryEntity inspectSummary, ICW_LCD_SurfaceResultEntity inspection,
             string imgRemoteBasePath, string endTime, string[] imgFolderLevels, ref string reason)
@@ -956,7 +889,7 @@ namespace Business
             string markImgPath = GetMarkImagePath(inspection);
             if (string.IsNullOrEmpty(markImgPath))
             {
-                Logger.Log("Warning", "未解析到九宫格图片路径，跳过上传");
+                Logger.Log("Warning", "未解析到原图路径，跳过上传");
                 return true;
             }
 
@@ -966,7 +899,7 @@ namespace Business
 
             if (!UploadFTPFileWithPath(_maxTry, imgRemotePath, imgLocalPath, out reason))
             {
-                Logger.Log("Error", $"九宫格图片上传失败：{reason}");
+                Logger.Log("Error", $"原图上传失败：{reason}");
                 return false;
             }
 
@@ -974,7 +907,7 @@ namespace Business
         }
 
         /// <summary>
-        /// 解析九宫格图片路径
+        /// 解析原图路径
         /// </summary>
         private string GetMarkImagePath(ICW_LCD_SurfaceResultEntity inspection)
         {
@@ -1416,625 +1349,17 @@ namespace Business
         [DisplayName("图片上传失败最大重试次数ImageUploadMaxCount")]
         [Description("超过此次数自动跳过该产品")]
         public int MaxImageUploadFailCount { get; set; } = 30;
+
+        [Category("04. 业务配置")]
+        [DisplayName("设备位置通道(FA_LANE)")]
+        [Description("A面或者B面")]
+        public string Lane { get; set; } = "A";
+
+        [Category("04. 业务配置")]
+        [DisplayName("工位(FA_STAGE)")]
+        [Description("")]
+        public int Stage { get; set; } = 1;
         #endregion
     }
-    #endregion
-
-    #region XML序列化实体（客户标准 NG/G 格式）
-    //[XmlRoot("DEFECT_FILE")]
-    //public class DEFECT_FILE
-    //{
-    //    [XmlAttribute("NAME")]
-    //    public string NAME { get; set; }
-
-    //    [XmlElement("PANEL")]
-    //    public PANEL PANEL { get; set; }
-    //}
-
-    public class PANEL
-    {
-        public HEADER HEADER { get; set; }
-        public BODY BODY { get; set; }
-        public DEFECT_INFO DEFECT_INFO { get; set; }
-    }
-
-    #region XML HEADER
-    public class HEADER
-    {
-        public string KEY_ID { get; set; }
-        public string PANEL_ID { get; set; }
-        public string SERIAL_NO { get; set; }
-        public string TOTAL_INPUT { get; set; }
-        public string LINE_ID { get; set; }
-        public string MACHINE_ID { get; set; }
-        public string UNIT_ID { get; set; }
-        public string OPER_ID { get; set; }
-        public string PROC_ID { get; set; }
-        public string RECIPE_ID { get; set; }
-        public string JUDGE { get; set; }
-        public INSP_TIME INSP_TIME { get; set; }
-    }
-    public class INSP_TIME
-    {
-        [XmlAttribute] public string START { get; set; }
-        [XmlAttribute] public string END { get; set; }
-    }
-    #endregion
-
-    #region XML BODY
-    public class BODY
-    {
-        public AP_INFO AP_INFO { get; set; }
-        public JUDGE_INFO JUDGE_INFO { get; set; }
-        public AOI_MAP_IMAGE AOI_MAP_IMAGE { get; set; }
-        public RECIPE RECIPE { get; set; }
-        public DEFECT_NO DEFECT_NO { get; set; }
-    }
-
-    #region AP_INFO
-    public class AP_INFO
-    {
-        public PROC PROC { get; set; }
-        public MACHINE MACHINE { get; set; }
-        public TIME TIME { get; set; }
-        public OPERATOR OPERATOR { get; set; }
-        public JUDGE JUDGE { get; set; }
-        public REASON REASON { get; set; }
-        public WORKTABLE WORKTABLE { get; set; }
-        public TYPE TYPE { get; set; }
-        public GRID GRID { get; set; }
-    }
-    public class PROC
-    {
-        [XmlAttribute("FA")]
-        public string FA { get; set; } = "45550";
-    }
-    public class MACHINE
-    {
-        [XmlAttribute("FA")]
-        public string FA { get; set; } = "HNAMAL55ZK08";
-
-        [XmlAttribute("FA_GIB")]
-        public string FA_GIB { get; set; } = "";
-    }
-    public class TIME
-    {
-        [XmlAttribute("FA")]
-        public string FA { get; set; } = "23";
-
-        [XmlAttribute("FA_BS")]
-        public string FA_BS { get; set; } = "3";
-
-        [XmlAttribute("FA_BD")]
-        public string FA_BD { get; set; } = "53";
-
-        [XmlAttribute("FA_WA")]
-        public string FA_WA { get; set; } = "";
-
-        [XmlAttribute("FA_FT1")]
-        public string FA_FT1 { get; set; } = "53";
-
-        [XmlAttribute("FA_FT2")]
-        public string FA_FT2 { get; set; } = "83";
-
-        [XmlAttribute("FA_BM1")]
-        public string FA_BM1 { get; set; } = "";
-
-        [XmlAttribute("FA_BM2")]
-        public string FA_BM2 { get; set; } = "";
-
-        [XmlAttribute("FA_GIB")]
-        public string FA_GIB { get; set; } = "";
-    }
-    public class OPERATOR
-    {
-        [XmlAttribute("FA")]
-        public string FA { get; set; } = "VH057767";
-
-        [XmlAttribute("FA_GIB")]
-        public string FA_GIB { get; set; } = "";
-    }
-    public class JUDGE
-    {
-        [XmlAttribute("FA_FINAL")]
-        public string FA_FINAL { get; set; } = "G";
-
-        [XmlAttribute("FA_AOI")]
-        public string FA_AOI { get; set; } = "G";
-
-        [XmlAttribute("FA_BS")]
-        public string FA_BS { get; set; } = "G";
-
-        [XmlAttribute("FA_BD")]
-        public string FA_BD { get; set; } = "G";
-
-        [XmlAttribute("FA_WA")]
-        public string FA_WA { get; set; } = "";
-
-        [XmlAttribute("FA_FT1")]
-        public string FA_FT1 { get; set; } = "G";
-
-        [XmlAttribute("FA_FT2")]
-        public string FA_FT2 { get; set; } = "G";
-
-        [XmlAttribute("FA_BM1")]
-        public string FA_BM1 { get; set; } = "";
-
-        [XmlAttribute("FA_BM2")]
-        public string FA_BM2 { get; set; } = "";
-
-        [XmlAttribute("FA_GIB")]
-        public string FA_GIB { get; set; } = "";
-
-        [XmlAttribute("FA_GIB_2")]
-        public string FA_GIB_2 { get; set; } = "";
-    }
-    public class REASON
-    {
-        [XmlAttribute("FA_FINAL")]
-        public string FA_FINAL { get; set; } = "";
-
-        [XmlAttribute("FA_AOI")]
-        public string FA_AOI { get; set; } = "";
-
-        [XmlAttribute("FA_BS")]
-        public string FA_BS { get; set; } = "";
-
-        [XmlAttribute("FA_BD")]
-        public string FA_BD { get; set; } = "";
-
-        [XmlAttribute("FA_WA")]
-        public string FA_WA { get; set; } = "";
-
-        [XmlAttribute("FA_FT1")]
-        public string FA_FT1 { get; set; } = "";
-
-        [XmlAttribute("FA_FT2")]
-        public string FA_FT2 { get; set; } = "";
-
-        [XmlAttribute("FA_BM1")]
-        public string FA_BM1 { get; set; } = "";
-
-        [XmlAttribute("FA_BM2")]
-        public string FA_BM2 { get; set; } = "";
-
-        [XmlAttribute("FA_FCAM")]
-        public string FA_FCAM { get; set; } = "";
-
-        [XmlAttribute("FA_CNT")]
-        public string FA_CNT { get; set; } = "";
-
-        [XmlAttribute("FA_GIB")]
-        public string FA_GIB { get; set; } = "";
-
-        [XmlAttribute("FA_GIB_2")]
-        public string FA_GIB_2 { get; set; } = "";
-
-        [XmlAnyAttribute]
-        public XmlAttribute[] DynamicAttributes { get; set; }
-    }
-    public class WORKTABLE
-    {
-        [XmlAttribute("FA_LANE")]
-        public string FA_LANE { get; set; } = "A";
-
-        [XmlAttribute("FA_STAGE")]
-        public string FA_STAGE { get; set; } = "6";
-    }
-    public class TYPE
-    {
-        [XmlAttribute("FA")]
-        public string FA { get; set; } = "0";
-
-        [XmlAttribute("FA_GIB_MODE")]
-        public string FA_GIB_MODE { get; set; } = "";
-    }
-    public class GRID
-    {
-        [XmlAttribute("FA_FINAL")]
-        public string FA_FINAL { get; set; } = "";
-
-        [XmlAttribute("FA_AOI")]
-        public string FA_AOI { get; set; } = "";
-
-        [XmlAttribute("FA_BS")]
-        public string FA_BS { get; set; } = "211";
-
-        [XmlAttribute("FA_BD")]
-        public string FA_BD { get; set; } = "30";
-
-        [XmlAttribute("FA_WA")]
-        public string FA_WA { get; set; } = "";
-
-        [XmlAttribute("FA_FT1")]
-        public string FA_FT1 { get; set; } = "24";
-
-        [XmlAttribute("FA_FT2")]
-        public string FA_FT2 { get; set; } = "1";
-
-        [XmlAttribute("FA_BM1")]
-        public string FA_BM1 { get; set; } = "";
-
-        [XmlAttribute("FA_BM2")]
-        public string FA_BM2 { get; set; } = "";
-
-        [XmlAttribute("FA_FCAM")]
-        public string FA_FCAM { get; set; } = "";
-
-        [XmlAttribute("FA_CNT")]
-        public string FA_CNT { get; set; } = "";
-
-        [XmlAttribute("FA_GIB")]
-        public string FA_GIB { get; set; } = "";
-
-        [XmlAttribute("FA_GIB_2")]
-        public string FA_GIB_2 { get; set; } = "";
-    }
-    #endregion
-
-    #region JUDGE_INFO
-    public class JUDGE_INFO
-    {
-        [XmlElement("LATEST")]
-        public LATEST LATEST { get; set; } = new LATEST();
-    }
-    public class LATEST
-    {
-        [XmlAttribute("JUDGE")]
-        public string JUDGE { get; set; }
-        [XmlAttribute("REASON")]
-        public string REASON { get; set; }
-    }
-    #endregion
-
-    #region AOI_MAP_IMAGE
-    public class AOI_IMAGE
-    {
-        [XmlAttribute("SCAN")]
-        public string SCAN { get; set; } = "44425";
-
-        [XmlAttribute("LIGHT")]
-        public string LIGHT { get; set; } = "1";
-
-        [XmlAttribute("SERVER")]
-        public string SERVER { get; set; } = "2";
-
-        [XmlAttribute("VP")]
-        public string VP { get; set; } = "1";
-
-        [XmlAttribute("PATH")]
-        public string PATH { get; set; } = "IMAGE/REF_IMAGE/03/09/LH627WF2MFA/HNAMAL55ZK08/A4QT5A00MY16BCL/A4QT5A00MY16BCL_HNAMAL55ZK08_45550_VP1_1_BCL.JPG";
-
-        [XmlAttribute("NAME")]
-        public string NAME { get; set; } = "A4QT5A00MY16BCL_HNAMAL55ZK08_45550_VP1_1_BCL.JPG";
-    }
-
-    [XmlRoot("AOI_MAP_IMAGE")]
-    public class AOI_MAP_IMAGE
-    {
-        [XmlElement("BACK2_IMAGE_1")]
-        public AOI_IMAGE BACK2_IMAGE_1 { get; set; }
-
-        [XmlElement("BACK3_IMAGE_1")]
-        public AOI_IMAGE BACK3_IMAGE_1 { get; set; }
-
-        [XmlElement("BACK3_IMAGE_2")]
-        public AOI_IMAGE BACK3_IMAGE_2 { get; set; }
-
-        [XmlElement("BACK3_IMAGE_3")]
-        public AOI_IMAGE BACK3_IMAGE_3 { get; set; }
-
-        [XmlElement("FRONT1_IMAGE_1")]
-        public AOI_IMAGE FRONT1_IMAGE_1 { get; set; }
-
-        [XmlElement("FRONT2_IMAGE_1")]
-        public AOI_IMAGE FRONT2_IMAGE_1 { get; set; }
-
-        [XmlElement("FRONT3_IMAGE_1")]
-        public AOI_IMAGE FRONT3_IMAGE_1 { get; set; }
-    }
-    #endregion
-
-    #region RECIPE
-    [XmlRoot("RECIPE")]
-    public class RECIPE
-    {
-        [XmlElement("CLASSIFY")]
-        public CLASSIFY CLASSIFY { get; set; }
-
-        [XmlElement("RECIPE")]
-        public RECIPE_NODE RECIPE_NODE { get; set; }
-    }
-
-    public class CLASSIFY
-    {
-        [XmlAttribute("FA")]
-        public string FA { get; set; } = "45550";
-    }
-
-    public class RECIPE_NODE
-    {
-        [XmlAttribute("FA")]
-        public string FA { get; set; } = "HNAMAL55ZK08";
-
-        [XmlAttribute("FA_GIB")]
-        public string FA_GIB { get; set; } = "";
-    }
-    #endregion
-
-    #region DEFECT_NO
-    public class DEFECT_NO
-    {
-        [XmlAttribute("TOTAL")]
-        public int TOTAL { get; set; } = 0;
-    }
-    #endregion
-
-    #endregion
-
-    #region XML DEFECT_INFO
-    public class DEFECT_INFO
-    {
-        [XmlElement("DEFECT")] public List<DEFECT> DEFECT { get; set; }
-
-        [XmlElement("PatXMLInfo")] public string PatXMLInfo { get; set; }
-    }
-
-    #region DEFECT
-    public class DEFECT
-    {
-        [XmlAttribute("SHOP")] public string SHOP { get; set; }
-        [XmlAttribute("DEF_NO")] public int DEF_NO { get; set; }
-        [XmlAttribute("PNL_START_TIME")] public string PNL_START_TIME { get; set; }
-        [XmlAttribute("PNL_END_TIME")] public string PNL_END_TIME { get; set; }
-        [XmlAttribute("PROC_ID")] public string PROC_ID { get; set; }
-        [XmlAttribute("MACHINE_ID")] public string MACHINE_ID { get; set; }
-        [XmlAttribute("JUDGE")] public string JUDGE { get; set; }
-        [XmlAttribute("REASON")] public string REASON { get; set; }
-        [XmlAttribute("CLASSIFY")] public string CLASSIFY { get; set; }
-
-        [XmlAttribute] public double G_AREAOVERTHRES { get; set; }
-        [XmlAttribute] public double G_AVGGRAYLEVELH { get; set; }
-        [XmlAttribute] public double G_AVGGRAYLEVELH_ORG { get; set; }
-        [XmlAttribute] public double G_AVGGRAYLEVELL { get; set; }
-        [XmlAttribute] public double G_AVGGRAYLEVELL_ORG { get; set; }
-        [XmlAttribute] public double G_DEFECTSIZE { get; set; }
-        [XmlAttribute] public double G_DEFECTTYPE { get; set; }
-        [XmlAttribute] public double G_GRAYMAX { get; set; }
-        [XmlAttribute] public double G_GRAYMAX_ORG { get; set; }
-        [XmlAttribute] public double G_GRAYMIN { get; set; }
-        [XmlAttribute] public double G_GRAYMIN_ORG { get; set; }
-        [XmlAttribute] public int G_PTNTYPE { get; set; }
-        [XmlAttribute] public int G_SHOTNO { get; set; }
-        [XmlAttribute] public int G_VPNO { get; set; }
-        [XmlAttribute] public int G_ZONENO { get; set; }
-        [XmlAttribute] public int G_CAMNO { get; set; }
-        [XmlAttribute] public int G_CELLNO { get; set; }
-        [XmlAttribute] public int G_DEFECTID { get; set; }
-        [XmlAttribute] public int G_DFTEX { get; set; }
-        [XmlAttribute] public int G_DFTEY { get; set; }
-        [XmlAttribute] public int G_DFTSX { get; set; }
-        [XmlAttribute] public int G_DFTSY { get; set; }
-        [XmlAttribute] public int G_GRIDNUM { get; set; }
-        [XmlAttribute] public double G_HEIGHT { get; set; }
-        [XmlAttribute] public int G_OPTICTYPE { get; set; }
-        [XmlAttribute] public int G_POSX { get; set; }
-        [XmlAttribute] public int G_POSY { get; set; }
-        [XmlAttribute] public int G_PTNNO { get; set; }
-        [XmlAttribute] public double G_REALPANELX { get; set; }
-        [XmlAttribute] public double G_REALPANELY { get; set; }
-        [XmlAttribute] public double G_REALX { get; set; }
-        [XmlAttribute] public double G_REALY { get; set; }
-        [XmlAttribute] public double G_WIDTH { get; set; }
-
-        // 第一次 GRAYLEVELL_RATE
-        [XmlAttribute] public int GRAYLEVELL_RATE { get; set; }
-
-        [XmlAttribute] public double L_LDPEAKDIFFERENCE { get; set; }
-        [XmlAttribute] public double L_LDWIDTH { get; set; }
-
-        [XmlAttribute] public double M_COMPRESSION { get; set; }
-        [XmlAttribute] public double M_DEFOCUS_INDEX { get; set; }
-        [XmlAttribute] public double M_INTENSITY { get; set; }
-        [XmlAttribute] public double M_LEVEL_DATA { get; set; }
-        [XmlAttribute] public double M_N1 { get; set; }
-        [XmlAttribute] public double M_N2 { get; set; }
-        [XmlAttribute] public double M_N3 { get; set; }
-        [XmlAttribute] public double M_N3_NEW { get; set; }
-        [XmlAttribute] public double M_N4 { get; set; }
-        [XmlAttribute] public double M_N5 { get; set; }
-        [XmlAttribute] public double M_NLD_AREA { get; set; }
-        [XmlAttribute] public double M_NLD_AVG { get; set; }
-        [XmlAttribute] public double M_NLD_AVG_DIFF { get; set; }
-        [XmlAttribute] public double M_NLD_DIFF { get; set; }
-        [XmlAttribute] public double M_NLD_REF { get; set; }
-        [XmlAttribute] public double M_NLD_SHOT2_AVG_DIFF { get; set; }
-        [XmlAttribute] public double M_NLD_SHOT2_NLD_VAR_DST { get; set; }
-        [XmlAttribute] public double M_NLD_SHOT2_VAR { get; set; }
-        [XmlAttribute] public double M_NLD_TAR { get; set; }
-        [XmlAttribute] public double M_NLD_VAR { get; set; }
-        [XmlAttribute] public int M_ROI_TYPE { get; set; }
-        [XmlAttribute] public double M_BVALUEH { get; set; }
-        [XmlAttribute] public double M_BVALUEL { get; set; }
-        [XmlAttribute] public double M_BOX40_AVGGRAYLEVEL { get; set; }
-        [XmlAttribute] public double M_BOX40_MAXVAL { get; set; }
-        [XmlAttribute] public double M_BOX40_MINVAL { get; set; }
-        [XmlAttribute] public double M_BOX40_STDDEVIATION { get; set; }
-        [XmlAttribute] public double M_GVALUEH { get; set; }
-        [XmlAttribute] public double M_GVALUEL { get; set; }
-        [XmlAttribute] public double M_LVALUEH { get; set; }
-        [XmlAttribute] public double M_LVALUEL { get; set; }
-        [XmlAttribute] public double M_POCB_DEFECT { get; set; }
-        [XmlAttribute] public double M_RVALUEH { get; set; }
-        [XmlAttribute] public double M_RVALUEL { get; set; }
-        [XmlAttribute] public double M_UVALUEH { get; set; }
-        [XmlAttribute] public double M_UVALUEL { get; set; }
-        [XmlAttribute] public double M_VVALUEH { get; set; }
-        [XmlAttribute] public double M_VVALUEL { get; set; }
-
-        [XmlAttribute] public double P_AVGGRAYLEVELH_148 { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELH_B { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELH_G { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELH_R { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELL_108 { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELL_B { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELL_G { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELL_PRC { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELL_R { get; set; }
-        [XmlAttribute] public double P_BRIGHT_M_LINK_CNT { get; set; }
-        [XmlAttribute] public double P_DARK_M_LINK_RGB { get; set; }
-        [XmlAttribute] public double P_DARK_M_LINK_CNT { get; set; }
-        [XmlAttribute] public double P_NEAR_PIXEL_VAL { get; set; }
-        [XmlAttribute] public double P_OMIT_AVG_ORG { get; set; }
-        [XmlAttribute] public double P_OMIT_AVG_PRC { get; set; }
-        [XmlAttribute] public double P_OMIT_MAX_ORG { get; set; }
-        [XmlAttribute] public double P_OMIT_MAX_PRC { get; set; }
-        [XmlAttribute] public double P_PIXELINFO { get; set; }
-        [XmlAttribute] public double P_PIXEL_PITCH { get; set; }
-        [XmlAttribute] public double P_PIXEL_SIZE_X { get; set; }
-        [XmlAttribute] public double P_PIXEL_SIZE_Y { get; set; }
-        [XmlAttribute] public double P_SHARE_AVGGRAYLEVELL_ORG_B { get; set; }
-        [XmlAttribute] public double P_SHARE_AVGGRAYLEVELL_ORG_G { get; set; }
-        [XmlAttribute] public double P_SHARE_AVGGRAYLEVELL_ORG_R { get; set; }
-        [XmlAttribute] public double P_SHARE_DARK_M_LINK_CNT_B { get; set; }
-        [XmlAttribute] public double P_SHARE_DARK_M_LINK_CNT_G { get; set; }
-        [XmlAttribute] public double P_SHARE_DARK_M_LINK_CNT_R { get; set; }
-        [XmlAttribute] public double P_SHARE_NEAR_PIXEL_VAL_B { get; set; }
-        [XmlAttribute] public double P_SHARE_NEAR_PIXEL_VAL_G { get; set; }
-        [XmlAttribute] public double P_SHARE_NEAR_PIXEL_VAL_R { get; set; }
-        [XmlAttribute] public double P_SHARE_POSX_B { get; set; }
-        [XmlAttribute] public double P_SHARE_POSX_G { get; set; }
-        [XmlAttribute] public double P_SHARE_POSX_R { get; set; }
-        [XmlAttribute] public double P_SHARE_POSY_B { get; set; }
-        [XmlAttribute] public double P_SHARE_POSY_G { get; set; }
-        [XmlAttribute] public double P_SHARE_POSY_R { get; set; }
-        [XmlAttribute] public double P_HIGH_AREA_GRAYLEVEL_COUNT { get; set; }
-        [XmlAttribute] public double P_LOW_AREA_GRAYLEVEL_COUNT { get; set; }
-
-        [XmlAttribute] public double Q_DISPLAY_ROI { get; set; }
-        [XmlAttribute] public double Q_ZONE1_MIN { get; set; }
-        [XmlAttribute] public double Q_ZONE2_MIN { get; set; }
-        [XmlAttribute] public double Q_ZONE3_MIN { get; set; }
-
-        [XmlAttribute] public double T_ASYNC_1 { get; set; }
-        [XmlAttribute] public double T_ASYNC_10 { get; set; }
-        [XmlAttribute] public double T_ASYNC_2 { get; set; }
-        [XmlAttribute] public double T_ASYNC_3 { get; set; }
-        [XmlAttribute] public double T_ASYNC_4 { get; set; }
-        [XmlAttribute] public double T_ASYNC_5 { get; set; }
-        [XmlAttribute] public double T_ASYNC_6 { get; set; }
-        [XmlAttribute] public double T_ASYNC_7 { get; set; }
-        [XmlAttribute] public double T_ASYNC_8 { get; set; }
-        [XmlAttribute] public double T_ASYNC_9 { get; set; }
-        [XmlAttribute] public double T_ASYNC_INDEX { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD1 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD10 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD2 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD3 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD4 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD5 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD6 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD7 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD8 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD9 { get; set; }
-
-        [XmlAttribute] public double U1_OMIT_AREA_PRC { get; set; }
-        [XmlAttribute] public double U2_OMIT_AREA_PRC { get; set; }
-        [XmlAttribute] public double U3_ASYNC_INDEX2 { get; set; }
-        [XmlAttribute] public double U4_OMIT_WID { get; set; }
-        [XmlAttribute] public double U5_OMIT_HGT { get; set; }
-        [XmlAttribute] public double U_ANOTHER_OMIT_AREA { get; set; }
-        [XmlAttribute] public double U_ANOTHER_OMIT_AVG_PRC { get; set; }
-        [XmlAttribute] public double U_ANOTHER_OMIT_HGT { get; set; }
-        [XmlAttribute] public double U_ANOTHER_OMIT_MAX_PRC { get; set; }
-        [XmlAttribute] public double U_ANOTHER_OMIT_MIN_PRC { get; set; }
-        [XmlAttribute] public double U_ANOTHER_OMIT_WID { get; set; }
-        [XmlAttribute] public double U_OMIT_AREA { get; set; }
-        [XmlAttribute] public double U_OMIT_HGT { get; set; }
-        [XmlAttribute] public double U_OMIT_WID { get; set; }
-
-        [XmlAttribute] public double X001_INSPTYPE { get; set; }
-        [XmlAttribute] public double X002_OMIT_BLOB_AREA { get; set; }
-        [XmlAttribute] public double X003_OMIT_BLOB_LX { get; set; }
-        [XmlAttribute] public double X004_OMIT_BLOB_LY { get; set; }
-        [XmlAttribute] public double X005_OMIT_BLOB_BOX { get; set; }
-        [XmlAttribute] public double X008_NLD_LEFTNOTCHDIFF { get; set; }
-        [XmlAttribute] public double X009_NLD_RIGHTNOTCHDIFF { get; set; }
-        [XmlAttribute] public double X065_LABAREA { get; set; }
-        [XmlAttribute] public double X066_LDGRAYMAX { get; set; }
-        [XmlAttribute] public double X067_LDGRAYMIN { get; set; }
-        [XmlAttribute] public double X106_FMM_STRENGTH { get; set; }
-        [XmlAttribute] public double X107_FMM_AVGR { get; set; }
-        [XmlAttribute] public double X108_FMM_AVGG { get; set; }
-        [XmlAttribute] public double X109_FMM_AVGB { get; set; }
-        [XmlAttribute] public double X110_FMM_L { get; set; }
-        [XmlAttribute] public double X111_FMM_U { get; set; }
-        [XmlAttribute] public double X112_FMM_V { get; set; }
-        [XmlAttribute] public double X113_FMM_BASEL { get; set; }
-        [XmlAttribute] public double X114_FMM_BASEU { get; set; }
-        [XmlAttribute] public double X115_FMM_BASEV { get; set; }
-        [XmlAttribute] public double X116_FMM_DEG { get; set; }
-        [XmlAttribute] public double X117_FMM_SIZE { get; set; }
-        [XmlAttribute] public double X118_FMM_HEI { get; set; }
-        [XmlAttribute] public double X119_FMM_WID { get; set; }
-        [XmlAttribute] public double X120_FMM_U_DIFF { get; set; }
-        [XmlAttribute] public double X121_FMM_V_DIFF { get; set; }
-        [XmlAttribute] public double X122_FMM_U_DIFF_GR { get; set; }
-        [XmlAttribute] public double X123_FMM_U_DEV { get; set; }
-        [XmlAttribute] public double X124_FMM_V_DEV { get; set; }
-        [XmlAttribute] public double X125_FMM_U_DEV_GR { get; set; }
-        [XmlAttribute] public double X126_FMM_STRENGTH { get; set; }
-        [XmlAttribute] public double X127_FMM_U_DUV { get; set; }
-        [XmlAttribute] public double X128_FMM_V_DUV { get; set; }
-        [XmlAttribute] public double X129_FMM_U_COLORANGLE { get; set; }
-        [XmlAttribute] public double X130_FMM_V_COLORANGLE { get; set; }
-        [XmlAttribute] public double X137_CHANENL { get; set; }
-        [XmlAttribute] public double X138_REDPRC { get; set; }
-        [XmlAttribute] public double X139_GREENPRC { get; set; }
-        [XmlAttribute] public double X140_BLUEPRC { get; set; }
-        [XmlAttribute] public double X141_COLORDEG { get; set; }
-        [XmlAttribute] public double X142_REDDIFF { get; set; }
-        [XmlAttribute] public double X143_GREENDIFF { get; set; }
-        [XmlAttribute] public double X144_BLUEDIFF { get; set; }
-        [XmlAttribute] public double X145_FMM_T_REMAIN { get; set; }
-        [XmlAttribute] public double X146_FMM_T_INTERSECTION { get; set; }
-        [XmlAttribute] public double X147_FMM_MAXDIFFUV { get; set; }
-        [XmlAttribute] public double X158_IQ_PROB1 { get; set; }
-        [XmlAttribute] public double X159_IQ_PROB2 { get; set; }
-        [XmlAttribute] public double X160_IQ_FLAG { get; set; }
-        [XmlAttribute] public double X161_FMM_LINE_PROJ_MAX { get; set; }
-        [XmlAttribute] public double X162_FMM_LINE_PROJ_MEAN { get; set; }
-        [XmlAttribute] public double X163_FMM_STRENGTH_MAX10 { get; set; }
-        [XmlAttribute] public double X164_FMM_STRENGTH_MIN10 { get; set; }
-        [XmlAttribute] public double X165_FMM_U_DIFF_MAX { get; set; }
-        [XmlAttribute] public double X166_FMM_U_DIFF_MIN { get; set; }
-        [XmlAttribute] public double X167_FMM_V_DIFF_MAX { get; set; }
-        [XmlAttribute] public double X168_FMM_V_DIFF_MIN { get; set; }
-        [XmlAttribute] public double X200_SIYA_HORI_LD_GRIDMIN_CENTER { get; set; }
-        [XmlAttribute] public double X201_SIYA_HORI_LD_GRIDMIN_DFT { get; set; }
-        [XmlAttribute] public double X202_INSP_PROB_C1 { get; set; }
-        [XmlAttribute] public double X203_INSP_PROB_C2 { get; set; }
-        [XmlAttribute] public double X204_INSP_PROB_C3 { get; set; }
-        [XmlAttribute] public double X205_INSP_PROB_C4 { get; set; }
-        [XmlAttribute] public double X206_INSP_PROB_C5 { get; set; }
-        [XmlAttribute] public double X207_INSP_PROB_C6 { get; set; }
-        [XmlAttribute] public double X208_EDGE_GROUPING { get; set; }
-
-        // 第二次 GRAYLEVELL_RATE（动态输出，不定义重复属性）
-        [XmlAnyAttribute]
-        public System.Xml.XmlAttribute[] ExtraAttrs { get; set; }
-
-        [XmlAttribute("IMAGE_FILE_NO")] public int IMAGE_FILE_NO { get; set; }
-
-        [XmlElement("IMG")] public List<IMG> IMG { get; set; }
-    }
-    public class IMG
-    {
-        [XmlAttribute("SEQ")] public int SEQ { get; set; }
-        [XmlAttribute("NAME")] public string NAME { get; set; }
-    }
-    #endregion
-    #endregion
-
     #endregion
 }
