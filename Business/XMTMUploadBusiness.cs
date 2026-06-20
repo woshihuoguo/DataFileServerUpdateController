@@ -1,5 +1,4 @@
 ﻿using Business;
-using BusinessTest;
 using Frame;
 using LT.Common.Logger;
 using LT.Common.Net;
@@ -120,7 +119,7 @@ namespace Business
                     }
                     #endregion
 
-                    #region 判断UniqueId,PannelID是否为空
+                    #region 判断UniqueId,GetPanelInfo,PannelID是否为空
                     if (string.IsNullOrEmpty(inspectSummary.UniqueId))
                     {
                         //数据异常，不进行上传
@@ -233,7 +232,7 @@ namespace Business
                     string imgRootDir = surfaceDects.Any(d => !string.IsNullOrEmpty(d.Code_AOI)) ? "DEFECT_IMAGE" : "DEFECT_IMAGE2";
 
                     string[] imgFolderLevels = { "IMAGE", imgRootDir, currentMonth, currentDay, _recipeName, _eqpUnitId, panelId };
-                    string imgRemoteBasePath = Path.Combine(_imgUploadRootPath, Path.Combine(imgFolderLevels)).Replace("\\", "/");
+                    string imgRemoteDir = Path.Combine(_imgUploadRootPath, Path.Combine(imgFolderLevels)).Replace("\\", "/");
                     #endregion
 
                     #region 4. 生成XML内容并本地备份
@@ -288,26 +287,28 @@ namespace Business
                     #region 6. 如果存在缺陷，上传图片文件
                     bool imageUploadOk = true;
 
-                    if (surfaceDects.Count > 10000000)  //暂不上传图像
+                    if (surfaceDects.Count > 0)  //暂不上传图像
                     {
                         // 创建图片远程目录
-                        //CreateFolders(_imgUploadRootPath, imgFolderLevels);
-                        bool result = FtpHelper.MakeDirs(config.ImgUploadRootPath, imgRemoteBasePath, false);
+                        bool result = FtpHelper.MakeDirs(config.ImgUploadRootPath, imgRemoteDir, false);
                         if (result == false)
                         {
-                            Logger.Log("Error", $"远程服务器创建目录：{imgRemoteBasePath} 目录失败！！！");
+                            Logger.Log("Error", $"远程服务器创建目录：{imgRemoteDir} 目录失败！！！");
                             continue;
                         }
 
                         // 上传缺陷小图(CropImage)
-                        if (!UploadDefectImages(inspectSummary, surfaceDects, imgRemoteBasePath, endTime, ref reason))
+                        string testFileName = @"\\192.168.100.101\LCDSystemTS\20260506\LG_Check_正面擦前线扫_PC2\2026_05_06_13_56_25_000001_20260506135657AA_2026-05-06 13.58.23.928_产品0_治具0_SurImg_不良品\DefectImage\擦前线光_0[3153_382_3253_490]_BOE-05.bmp";
+
+                        if (!UploadDefectImages(inspectSummary, surfaceDects, imgRemoteDir, endTime, ref reason,testFileName))
                         {
                             Logger.Log("Error", $"缺陷小图(CropImage)上传失败：{reason}");
                             imageUploadOk = false;
                         }
+                        
 
                         // 原图(ORGImage)
-                        if (!UploadMarkImage(inspectSummary, surfaceResult, imgRemoteBasePath, endTime, imgFolderLevels, ref reason))
+                        if (!UploadMarkImage(inspectSummary, surfaceResult, imgRemoteDir, endTime, imgFolderLevels, ref reason, testFileName))
                         {
                             Logger.Log("Error", $"原图(ORGImage)上传失败：{reason}");
                             imageUploadOk = false;
@@ -337,7 +338,7 @@ namespace Business
                     #region SysId更新
                     Logger.Log("Process", $"产品{panelId}上传流程全部完成");
                     currentSysId = inspectSummary.SysId;
-                    currentSysId++;
+                    //currentSysId++;
                     Save();
                     #endregion
                 }
@@ -433,7 +434,7 @@ namespace Business
                 for (int i = 0; i < aoiDefects.Count; i++)
                 {
                     string code = aoiDefects[i].Code_AOI ?? inspectSummary.Code ?? "";
-                    var attr = doc.CreateAttribute($"FA_R{i + 1}");
+                    var attr = doc.CreateAttribute($"FA_{i + 1}");
                     attr.Value = code;
                     attributes.Add(attr);
                 }
@@ -847,7 +848,7 @@ namespace Business
         /// 上传缺陷图片
         /// </summary>
         private bool UploadDefectImages(InspectSummaryEntity inspectSummary, List<ICW_LCD_SurfaceDefectEntity> aoiDefects,
-            string imgRemoteBasePath, string endTime, ref string reason)
+            string imgRemoteDir, string endTime, ref string reason,string imgLocalPath)
         {
             int uploadCount = 0;
             string panelId = PannelID;
@@ -861,10 +862,10 @@ namespace Business
                 string defectCode = defect.Code_AOI ?? inspectSummary.Code ?? "";
                 //string imgFileName = $"{panelId}_{_eqpUnitId}_{_procId}_{DateTime.Now.ToString("yyyyMMdd")}_gate_{judgeResult}_{defectCode}_{defectSerialNo}.JPG".ToUpper();
                 // 和 XML内命名改为一致
-                string imgFileName = $"{panelId}_{_eqpUnitId}_{_procId}_{defect.Pos_x:0}_{defect.Pos_y:0}_{judgeResult}_{defectCode}_{defectSerialNo}_1.JPG".ToUpper();
+                string imgFileName = $"{panelId}_{_eqpUnitId}_{_procId}_{defect.Pos_x:0}_{defect.Pos_y:0}_{judgeResult}_{defectCode}_{defectSerialNo}_{this.config.Lane}.JPG".ToUpper();
 
-                string imgLocalPath = Path.Combine(_localImageRoot, defect.ImagePath ?? "").ToUpper();
-                string imgRemotePath = $"{imgRemoteBasePath}/{imgFileName}";
+                imgLocalPath= imgLocalPath!=null? imgLocalPath: Path.Combine(_localImageRoot, defect.ImagePath ?? "").ToUpper();
+                string imgRemotePath = $"{imgRemoteDir}/{imgFileName}";
 
                 if (!UploadFTPFileWithPath(_maxTry, imgRemotePath, imgLocalPath, out reason))
                 {
@@ -884,18 +885,18 @@ namespace Business
         /// 上传原图
         /// </summary>
         private bool UploadMarkImage(InspectSummaryEntity inspectSummary, ICW_LCD_SurfaceResultEntity inspection,
-            string imgRemoteBasePath, string endTime, string[] imgFolderLevels, ref string reason)
+            string imgRemoteDir, string endTime, string[] imgFolderLevels, ref string reason,string imgLocalPath)
         {
             string markImgPath = GetMarkImagePath(inspection);
-            if (string.IsNullOrEmpty(markImgPath))
-            {
-                Logger.Log("Warning", "未解析到原图路径，跳过上传");
-                return true;
-            }
+            //if (string.IsNullOrEmpty(markImgPath))
+            //{
+            //    Logger.Log("Warning", "未解析到原图路径，跳过上传");
+            //    return true;
+            //}
 
-            string imageFileName_MarkImg = $"{PannelID}_{_eqpUnitId}_{endTime}_A.jpg".ToUpper();
-            string imgLocalPath = Path.Combine(_localImageRoot, markImgPath).ToUpper();
-            string imgRemotePath = $"{imgRemoteBasePath}/{imageFileName_MarkImg}";
+            string imageFileName_MarkImg = $"{PannelID}_{_eqpUnitId}_{endTime}_{this.config.Lane}.jpg".ToUpper();
+            imgLocalPath = imgLocalPath!=null? imgLocalPath: Path.Combine(_localImageRoot, markImgPath).ToUpper();
+            string imgRemotePath = $"{imgRemoteDir}/{imageFileName_MarkImg}";
 
             if (!UploadFTPFileWithPath(_maxTry, imgRemotePath, imgLocalPath, out reason))
             {
@@ -913,7 +914,7 @@ namespace Business
         {
             try
             {
-                if (string.IsNullOrEmpty(inspection.XMLInfo)) return "";
+                if (inspection==null||string.IsNullOrEmpty(inspection.XMLInfo)) return "";
                 XElement root = XElement.Parse(inspection.XMLInfo);
                 XElement markImgElement = root.Element("MarkImg");
                 return markImgElement?.Value ?? "";

@@ -77,7 +77,6 @@
     <Compile Include="FtpHelper.cs" />
     <Compile Include="LocalFileOperate.cs" />
     <Compile Include="PANEL.cs" />
-    <Compile Include="XMLEntity.cs" />
     <Compile Include="XMTMUploadBusiness.cs" />
     <Compile Include="UpLoadBusiness.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

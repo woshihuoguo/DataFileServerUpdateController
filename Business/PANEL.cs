@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using System.Xml;
-using BusinessTest;
 
 namespace Business
 {
@@ -90,6 +89,31 @@ namespace Business
         public string JUDGE { get; set; }
         [XmlAttribute("REASON")]
         public string REASON { get; set; }
+    }
+
+    [XmlRoot("RECIPE")]
+    public class RECIPE
+    {
+        [XmlElement("CLASSIFY")]
+        public CLASSIFY CLASSIFY { get; set; }
+
+        [XmlElement("RECIPE")]
+        public RECIPE_NODE RECIPE_NODE { get; set; }
+    }
+
+    public class CLASSIFY
+    {
+        [XmlAttribute("FA")]
+        public string FA { get; set; } = "45550";
+    }
+
+    public class RECIPE_NODE
+    {
+        [XmlAttribute("FA")]
+        public string FA { get; set; } = "HNAMAL55ZK08";
+
+        [XmlAttribute("FA_GIB")]
+        public string FA_GIB { get; set; } = "";
     }
 
     public class DEFECT_NO

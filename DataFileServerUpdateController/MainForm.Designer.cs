@@ -54,7 +54,8 @@
             this.业务配置ToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(1234, 33);
+            this.menuStrip1.Padding = new System.Windows.Forms.Padding(4, 1, 0, 1);
+            this.menuStrip1.Size = new System.Drawing.Size(829, 31);
             this.menuStrip1.TabIndex = 0;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -75,10 +76,10 @@
             // logViewer1
             // 
             this.logViewer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.logViewer1.Location = new System.Drawing.Point(0, 33);
-            this.logViewer1.Margin = new System.Windows.Forms.Padding(6);
+            this.logViewer1.Location = new System.Drawing.Point(0, 31);
+            this.logViewer1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.logViewer1.Name = "logViewer1";
-            this.logViewer1.Size = new System.Drawing.Size(1234, 750);
+            this.logViewer1.Size = new System.Drawing.Size(829, 557);
             this.logViewer1.TabIndex = 1;
             // 
             // contextMenuStrip
@@ -121,10 +122,9 @@
             // checkBoxPasue
             // 
             this.checkBoxPasue.Appearance = System.Windows.Forms.Appearance.Button;
-            this.checkBoxPasue.Location = new System.Drawing.Point(1122, 40);
-            this.checkBoxPasue.Margin = new System.Windows.Forms.Padding(4);
+            this.checkBoxPasue.Location = new System.Drawing.Point(751, 36);
             this.checkBoxPasue.Name = "checkBoxPasue";
-            this.checkBoxPasue.Size = new System.Drawing.Size(94, 44);
+            this.checkBoxPasue.Size = new System.Drawing.Size(63, 32);
             this.checkBoxPasue.TabIndex = 3;
             this.checkBoxPasue.Text = "暂停运行";
             this.checkBoxPasue.UseVisualStyleBackColor = true;
@@ -132,15 +132,14 @@
             // 
             // MainForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 18F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1234, 783);
+            this.ClientSize = new System.Drawing.Size(829, 588);
             this.Controls.Add(this.checkBoxPasue);
             this.Controls.Add(this.logViewer1);
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
-            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "ICW DFS数据上传辅助工具";

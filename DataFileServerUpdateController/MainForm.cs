@@ -22,6 +22,8 @@ namespace DataFileServerUpdateController
         public MainForm()
         {
             InitializeComponent();
+
+            this.checkBoxPasue.Location = new Point(this.ClientSize.Width - this.checkBoxPasue.Width - 20,30);
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -84,10 +86,10 @@ namespace DataFileServerUpdateController
                         business.SetConfig(serviceConfig);
                     }
 
-                    /* dfs咱们不连接PLC
+              
                     var serviceThread = new Thread(() =>
                     {
-                        if (string.IsNullOrEmpty(baseConfig.PlcProtocol) == false &&
+                        if (baseConfig.PlcHeartBeatEnable &&string.IsNullOrEmpty(baseConfig.PlcProtocol) == false &&
                             string.IsNullOrEmpty(baseConfig.PlcIp) == false && baseConfig.PlcPort > 0)
                         {
                             if (Enum.TryParse(baseConfig.PlcProtocol, out PLCProtocolType protocolType))
@@ -110,39 +112,10 @@ namespace DataFileServerUpdateController
                         business.Start();
                     });
                     serviceThread.Start();
-                    */
 
-                    var serviceThread = new Thread(() =>
-                    {
-                        business.Start();
-                    });
-                    serviceThread.Start();
                 }
 
                 Frame.Frame.Instance.SystemConfig = baseConfig;
-
-                /*如果PLC心跳开启，尝试连接PLC
-                if (baseConfig.PlcHeartBeatEnable && string.IsNullOrEmpty(baseConfig.PlcProtocol) == false &&
-                    string.IsNullOrEmpty(baseConfig.PlcIp) == false && baseConfig.PlcPort > 0)
-                {
-                    if (Enum.TryParse(baseConfig.PlcProtocol, out PLCProtocolType protocolType))
-                    {
-                        if (plcCommunicator.Initial(protocolType, baseConfig.PlcIp, baseConfig.PlcPort, out reason) == false)
-                        {
-                            return false;
-                        }
-                        if (plcCommunicator.Start(out reason) == false)
-                        {
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        reason = "PLC类型配置错误";
-                        return false;
-                    }
-                }
-                */
 
                 return true;
             }
@@ -259,6 +232,7 @@ namespace DataFileServerUpdateController
 
         private void MainForm_SizeChanged(object sender, EventArgs e)
         {
+            this.checkBoxPasue.Location=new Point(this.ClientSize.Width - this.checkBoxPasue.Width - 20,30);
             // 判断只有最小化时，隐藏窗体
             if (this.WindowState == FormWindowState.Minimized)
             {
