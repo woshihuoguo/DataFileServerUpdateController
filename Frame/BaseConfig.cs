@@ -36,7 +36,7 @@ namespace Frame
 
         [Category("系统配置")]
         [DisplayName("客户协议")]
-        public string CustomBusiness { get; set; }
+        public string CustomBusiness{ get; set; }
     }
 
     [Serializable]

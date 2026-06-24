@@ -241,8 +241,13 @@ namespace Business
                 return true;
             }
 
-
-            string subUri= destUri.Substring(rootUri.Length);
+            //一次性创建
+            //if (MakeDir(destUri, isFTPS))
+            //    return true;
+            
+     
+            //逐级创建
+            string subUri = destUri.Substring(rootUri.Length);
 
             //遍历子文件创建
             bool makeDirResult = false;
@@ -255,7 +260,7 @@ namespace Business
                     : new List<string> { rootUri };
                 tmpDirs.AddRange(dirs.GetRange(0, i));
                 var tmpUri = string.Join("/", tmpDirs);
-                makeDirResult=MakeDir(tmpUri, isFTPS);
+                makeDirResult = MakeDir(tmpUri, isFTPS);
             }
 
             return makeDirResult ? true : false;
@@ -493,6 +498,12 @@ namespace Business
                 if (uploadResult == FtpStatus.Success)
                 {
                     Logger.Log("Debug", $"{remoteFileName} 上传 {filePathRemote} 执行成功");
+                    return true;
+                }
+                else if (uploadResult == FtpStatus.Skipped)
+                {
+                    reason = "文件已存在，跳过上传";
+                    Logger.Log("Debug", $"{filePathRemote} {reason}");
                     return true;
                 }
                 else

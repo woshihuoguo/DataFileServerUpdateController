@@ -42,7 +42,6 @@ namespace Business
     {
         public AP_INFO AP_INFO { get; set; }
         public JUDGE_INFO JUDGE_INFO { get; set; }
-        public RECIPE RECIPE { get; set; }
         public DEFECT_NO DEFECT_NO { get; set; }
     }
 
@@ -140,241 +139,140 @@ namespace Business
         [XmlAttribute("JUDGE")] public string JUDGE { get; set; }
         [XmlAttribute("REASON")] public string REASON { get; set; }
         [XmlAttribute("CLASSIFY")] public string CLASSIFY { get; set; }
+        [XmlAttribute("IMAGE_FILE_NO")] public int IMAGE_FILE_NO { get; set; }
+        [XmlElement("IMG")] public List<IMG> IMG { get; set; }
 
-        [XmlAttribute] public double G_AREAOVERTHRES { get; set; }
-        [XmlAttribute] public double G_AVGGRAYLEVELH { get; set; }
-        [XmlAttribute] public double G_AVGGRAYLEVELH_ORG { get; set; }
-        [XmlAttribute] public double G_AVGGRAYLEVELL { get; set; }
-        [XmlAttribute] public double G_AVGGRAYLEVELL_ORG { get; set; }
-        [XmlAttribute] public double G_DEFECTSIZE { get; set; }
-        [XmlAttribute] public double G_DEFECTTYPE { get; set; }
-        [XmlAttribute] public double G_GRAYMAX { get; set; }
-        [XmlAttribute] public double G_GRAYMAX_ORG { get; set; }
-        [XmlAttribute] public double G_GRAYMIN { get; set; }
-        [XmlAttribute] public double G_GRAYMIN_ORG { get; set; }
-        [XmlAttribute] public int G_PTNTYPE { get; set; }
-        [XmlAttribute] public int G_SHOTNO { get; set; }
-        [XmlAttribute] public int G_VPNO { get; set; }
-        [XmlAttribute] public int G_ZONENO { get; set; }
-        [XmlAttribute] public int G_CAMNO { get; set; }
-        [XmlAttribute] public int G_CELLNO { get; set; }
-        [XmlAttribute] public int G_DEFECTID { get; set; }
-        [XmlAttribute] public int G_DFTEX { get; set; }
-        [XmlAttribute] public int G_DFTEY { get; set; }
-        [XmlAttribute] public int G_DFTSX { get; set; }
-        [XmlAttribute] public int G_DFTSY { get; set; }
-        [XmlAttribute] public int G_GRIDNUM { get; set; }
-        [XmlAttribute] public double G_HEIGHT { get; set; }
-        [XmlAttribute] public int G_OPTICTYPE { get; set; }
-        [XmlAttribute] public int G_POSX { get; set; }
-        [XmlAttribute] public int G_POSY { get; set; }
-        [XmlAttribute] public int G_PTNNO { get; set; }
-        [XmlAttribute] public double G_REALPANELX { get; set; }
-        [XmlAttribute] public double G_REALPANELY { get; set; }
+        #region starting with G
+        [XmlAttribute] public double GIB_judge { get; set; }
+        [XmlAttribute] public double G001_RealX { get; set; }
+        [XmlAttribute] public double G002_RealY { get; set; }
+        [XmlAttribute] public double G003_GridPos { get; set; }
+        [XmlAttribute] public double G004_PxlX { get; set; }
+        [XmlAttribute] public double G005_PxlY { get; set; }
+        [XmlAttribute] public double G006_DefectID { get; set; }
+        [XmlAttribute] public double G007_LightID { get; set; }
+        [XmlAttribute] public double G008_RoiID { get; set; }
+        [XmlAttribute] public double G009_VpID { get; set; }
+        [XmlAttribute] public double G010_ScanID { get; set; }
+        [XmlAttribute] public int G011_TotalDetection { get; set; }
+        [XmlAttribute] public int G012_RealWidth { get; set; }
+        [XmlAttribute] public int G013_RealHeight { get; set; }
+        [XmlAttribute] public int G014_RealLength { get; set; }
+        [XmlAttribute] public int G015_RealArea { get; set; }
+        [XmlAttribute] public int G016_PxlWidth { get; set; }
+        [XmlAttribute] public int G017_PxlHeight { get; set; }
+        [XmlAttribute] public int G018_PxlLength { get; set; }
+        [XmlAttribute] public int G019_PxlArea { get; set; }
+        [XmlAttribute] public int G020_FillRate { get; set; }
+        [XmlAttribute] public int G021_Circularity { get; set; }
+        [XmlAttribute] public int G022_SeqID { get; set; }
+        [XmlAttribute] public double G024_CenterRate { get; set; }
+        [XmlAttribute] public int G025_DefocusIdx { get; set; }
+        [XmlAttribute] public int G026_PrjDensity { get; set; }
+        [XmlAttribute] public int G027_StdAngle { get; set; }
+        [XmlAttribute] public int G028_RealAreaH { get; set; }
+        [XmlAttribute] public double G029_RealAreaL { get; set; }
+        [XmlAttribute] public double G030_PxlAreaH { get; set; }
+        [XmlAttribute] public double G031_PxlAreaL { get; set; }
+        [XmlAttribute] public double G032_NumContours { get; set; }
+        [XmlAttribute] public double G033_PrcGrayAvg { get; set; }
+        [XmlAttribute] public int G034_PrcGrayAvgH { get; set; }
+        [XmlAttribute] public double G035_PrcGrayAvgL { get; set; }
+        [XmlAttribute] public double G036_PrcGrayMax { get; set; }
+        [XmlAttribute] public double G037_PrcGrayMin { get; set; }
+        [XmlAttribute] public double G038_PrcGrayStdDev { get; set; }
+        [XmlAttribute] public double G039_RippleScore { get; set; }
+        [XmlAttribute] public double G040_Kurtosis { get; set; }
+        [XmlAttribute] public double G041_Contrast { get; set; }
+        [XmlAttribute] public double G042_ContrastRatio { get; set; }
+        [XmlAttribute] public double G043_PCA_Axis1 { get; set; }
+        [XmlAttribute] public double G044_PCA_Axis2 { get; set; }
+        [XmlAttribute] public double G045_PCA_Angle { get; set; }
+        [XmlAttribute] public double G047_RoiArea { get; set; }
+        [XmlAttribute] public double G048_Rsquare { get; set; }
+        [XmlAttribute] public double G049_Rsquare2 { get; set; }
+        [XmlAttribute] public double G050_Entropy { get; set; }
+        [XmlAttribute] public double G051_InspType { get; set; }
+        [XmlAttribute] public double G052_Correlation { get; set; }
+        [XmlAttribute] public double G053_HistMaximaStdDev { get; set; }
+        [XmlAttribute] public double G054_Dist_DefSx_GlassSx { get; set; }
+        [XmlAttribute] public double G055_Dist_DefSy_GlassSy { get; set; }
+        [XmlAttribute] public double G056_Dist_DefEx_GlassEx { get; set; }
+        [XmlAttribute] public double G057_Dist_DefEy_GlassEy { get; set; }
+        [XmlAttribute] public int G058_ParticleLayer { get; set; }
+        [XmlAttribute] public double G059_ShadowDist { get; set; }
+        [XmlAttribute] public double G060_OrgGrayAvg { get; set; }
+        [XmlAttribute] public double G061_OrgGrayMax { get; set; }
+        [XmlAttribute] public double G062_OrgGrayMin { get; set; }
+        [XmlAttribute] public double G063_OrgGrayStdDev { get; set; }
+        [XmlAttribute] public double G064_Anomaly_MaxScore { get; set; }
+        [XmlAttribute] public double G066_OrgAvg_R { get; set; }
+        [XmlAttribute] public double G067_OrgMax_R { get; set; }
+        [XmlAttribute] public double G068_OrgMin_R { get; set; }
+        [XmlAttribute] public double G069_OrgAvg_G { get; set; }
+        [XmlAttribute] public double G070_OrgMax_G { get; set; }
+        [XmlAttribute] public double G071_OrgMin_G { get; set; }
+        [XmlAttribute] public double G072_OrgAvg_B { get; set; }
+        [XmlAttribute] public double G073_OrgMax_B { get; set; }
+        [XmlAttribute] public double G074_OrgMin_B { get; set; }
+        [XmlAttribute] public double G075_AutoThreArea { get; set; }
+        #endregion
+
+        #region starting with L, layers L01-L08
+        [XmlAttribute] public double L0101_Detection { get; set; }
+        [XmlAttribute] public double L0102_AreaL { get; set; }
+        [XmlAttribute] public double L0103_AreaH { get; set; }
+        [XmlAttribute] public double L0104_FillRate { get; set; }
+        [XmlAttribute] public double L0105_Prc_GrayAvgL { get; set; }
+        [XmlAttribute] public double L0106_Prc_GrayAvgH { get; set; }
+        [XmlAttribute] public double L0107_Prc_GrayMin { get; set; }
+        [XmlAttribute] public double L0108_Prc_GrayMax { get; set; }
+        [XmlAttribute] public double L0109_Similarity { get; set; }
+        [XmlAttribute] public double L0110_AreaL_limit { get; set; }
+        [XmlAttribute] public double L0111_AreaH_limit { get; set; }
+        [XmlAttribute] public double L0112_Org_GrayAvgL { get; set; }
+        [XmlAttribute] public double L0113_Org_GrayAvgH { get; set; }
+        [XmlAttribute] public double L0114_Org_GrayMin { get; set; }
+        [XmlAttribute] public double L0115_Org_GrayMax { get; set; }
+        [XmlAttribute] public double L0116_Width { get; set; }
+        [XmlAttribute] public double L0117_Height { get; set; }
+        [XmlAttribute] public double L0118_Length { get; set; }
+        [XmlAttribute] public double L0119_SimilarityBrt { get; set; }
+        [XmlAttribute] public double L0120_SimilarityArea { get; set; }
+        [XmlAttribute] public double L0121_Layer { get; set; }
+        #endregion
+
+        #region Model and version information
+        [XmlAttribute] public double MLClass01 { get; set; }
+        [XmlAttribute] public double MLClass02 { get; set; }
+        [XmlAttribute] public double MLClass03 { get; set; }
+        [XmlAttribute] public double MLClass04 { get; set; }
+        [XmlAttribute] public double MLClass05 { get; set; }
+        [XmlAttribute] public double MLClass06 { get; set; }
+        [XmlAttribute] public double MLClass07 { get; set; }
+        [XmlAttribute] public double MLClass08 { get; set; }
+        [XmlAttribute] public double MLClass09 { get; set; }
+        [XmlAttribute] public double MLClass10 { get; set; }
+        [XmlAttribute] public double V001_AlgoVersion { get; set; }
+        [XmlAttribute] public double V002_ClsfVersion { get; set; }
+        [XmlAttribute] public double V003_VP_IP { get; set; }
+        #endregion
+
+
+        [XmlAttribute] public double G_DFTSX { get; set; }
+        [XmlAttribute] public double G_DFTSY { get; set; }
+        [XmlAttribute] public double G_DFTEX { get; set; }
+        [XmlAttribute] public double G_DFTEY { get; set; }
         [XmlAttribute] public double G_REALX { get; set; }
         [XmlAttribute] public double G_REALY { get; set; }
-        [XmlAttribute] public double G_WIDTH { get; set; }
-
-        // 第一次 GRAYLEVELL_RATE
-        [XmlAttribute] public int GRAYLEVELL_RATE { get; set; }
-
-        [XmlAttribute] public double L_LDPEAKDIFFERENCE { get; set; }
-        [XmlAttribute] public double L_LDWIDTH { get; set; }
-
-        [XmlAttribute] public double M_COMPRESSION { get; set; }
-        [XmlAttribute] public double M_DEFOCUS_INDEX { get; set; }
-        [XmlAttribute] public double M_INTENSITY { get; set; }
-        [XmlAttribute] public double M_LEVEL_DATA { get; set; }
-        [XmlAttribute] public double M_N1 { get; set; }
-        [XmlAttribute] public double M_N2 { get; set; }
-        [XmlAttribute] public double M_N3 { get; set; }
-        [XmlAttribute] public double M_N3_NEW { get; set; }
-        [XmlAttribute] public double M_N4 { get; set; }
-        [XmlAttribute] public double M_N5 { get; set; }
-        [XmlAttribute] public double M_NLD_AREA { get; set; }
-        [XmlAttribute] public double M_NLD_AVG { get; set; }
-        [XmlAttribute] public double M_NLD_AVG_DIFF { get; set; }
-        [XmlAttribute] public double M_NLD_DIFF { get; set; }
-        [XmlAttribute] public double M_NLD_REF { get; set; }
-        [XmlAttribute] public double M_NLD_SHOT2_AVG_DIFF { get; set; }
-        [XmlAttribute] public double M_NLD_SHOT2_NLD_VAR_DST { get; set; }
-        [XmlAttribute] public double M_NLD_SHOT2_VAR { get; set; }
-        [XmlAttribute] public double M_NLD_TAR { get; set; }
-        [XmlAttribute] public double M_NLD_VAR { get; set; }
-        [XmlAttribute] public int M_ROI_TYPE { get; set; }
-        [XmlAttribute] public double M_BVALUEH { get; set; }
-        [XmlAttribute] public double M_BVALUEL { get; set; }
         [XmlAttribute] public double M_BOX40_AVGGRAYLEVEL { get; set; }
-        [XmlAttribute] public double M_BOX40_MAXVAL { get; set; }
-        [XmlAttribute] public double M_BOX40_MINVAL { get; set; }
-        [XmlAttribute] public double M_BOX40_STDDEVIATION { get; set; }
-        [XmlAttribute] public double M_GVALUEH { get; set; }
-        [XmlAttribute] public double M_GVALUEL { get; set; }
-        [XmlAttribute] public double M_LVALUEH { get; set; }
-        [XmlAttribute] public double M_LVALUEL { get; set; }
-        [XmlAttribute] public double M_POCB_DEFECT { get; set; }
-        [XmlAttribute] public double M_RVALUEH { get; set; }
-        [XmlAttribute] public double M_RVALUEL { get; set; }
-        [XmlAttribute] public double M_UVALUEH { get; set; }
-        [XmlAttribute] public double M_UVALUEL { get; set; }
-        [XmlAttribute] public double M_VVALUEH { get; set; }
-        [XmlAttribute] public double M_VVALUEL { get; set; }
-
-        [XmlAttribute] public double P_AVGGRAYLEVELH_148 { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELH_B { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELH_G { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELH_R { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELL_108 { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELL_B { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELL_G { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELL_PRC { get; set; }
-        [XmlAttribute] public double P_AVGGRAYLEVELL_R { get; set; }
-        [XmlAttribute] public double P_BRIGHT_M_LINK_CNT { get; set; }
-        [XmlAttribute] public double P_DARK_M_LINK_RGB { get; set; }
         [XmlAttribute] public double P_DARK_M_LINK_CNT { get; set; }
-        [XmlAttribute] public double P_NEAR_PIXEL_VAL { get; set; }
-        [XmlAttribute] public double P_OMIT_AVG_ORG { get; set; }
-        [XmlAttribute] public double P_OMIT_AVG_PRC { get; set; }
-        [XmlAttribute] public double P_OMIT_MAX_ORG { get; set; }
-        [XmlAttribute] public double P_OMIT_MAX_PRC { get; set; }
-        [XmlAttribute] public double P_PIXELINFO { get; set; }
-        [XmlAttribute] public double P_PIXEL_PITCH { get; set; }
-        [XmlAttribute] public double P_PIXEL_SIZE_X { get; set; }
-        [XmlAttribute] public double P_PIXEL_SIZE_Y { get; set; }
-        [XmlAttribute] public double P_SHARE_AVGGRAYLEVELL_ORG_B { get; set; }
-        [XmlAttribute] public double P_SHARE_AVGGRAYLEVELL_ORG_G { get; set; }
-        [XmlAttribute] public double P_SHARE_AVGGRAYLEVELL_ORG_R { get; set; }
-        [XmlAttribute] public double P_SHARE_DARK_M_LINK_CNT_B { get; set; }
-        [XmlAttribute] public double P_SHARE_DARK_M_LINK_CNT_G { get; set; }
-        [XmlAttribute] public double P_SHARE_DARK_M_LINK_CNT_R { get; set; }
-        [XmlAttribute] public double P_SHARE_NEAR_PIXEL_VAL_B { get; set; }
-        [XmlAttribute] public double P_SHARE_NEAR_PIXEL_VAL_G { get; set; }
-        [XmlAttribute] public double P_SHARE_NEAR_PIXEL_VAL_R { get; set; }
-        [XmlAttribute] public double P_SHARE_POSX_B { get; set; }
-        [XmlAttribute] public double P_SHARE_POSX_G { get; set; }
-        [XmlAttribute] public double P_SHARE_POSX_R { get; set; }
-        [XmlAttribute] public double P_SHARE_POSY_B { get; set; }
-        [XmlAttribute] public double P_SHARE_POSY_G { get; set; }
-        [XmlAttribute] public double P_SHARE_POSY_R { get; set; }
-        [XmlAttribute] public double P_HIGH_AREA_GRAYLEVEL_COUNT { get; set; }
-        [XmlAttribute] public double P_LOW_AREA_GRAYLEVEL_COUNT { get; set; }
-
-        [XmlAttribute] public double Q_DISPLAY_ROI { get; set; }
-        [XmlAttribute] public double Q_ZONE1_MIN { get; set; }
-        [XmlAttribute] public double Q_ZONE2_MIN { get; set; }
-        [XmlAttribute] public double Q_ZONE3_MIN { get; set; }
-
-        [XmlAttribute] public double T_ASYNC_1 { get; set; }
-        [XmlAttribute] public double T_ASYNC_10 { get; set; }
-        [XmlAttribute] public double T_ASYNC_2 { get; set; }
-        [XmlAttribute] public double T_ASYNC_3 { get; set; }
-        [XmlAttribute] public double T_ASYNC_4 { get; set; }
-        [XmlAttribute] public double T_ASYNC_5 { get; set; }
-        [XmlAttribute] public double T_ASYNC_6 { get; set; }
-        [XmlAttribute] public double T_ASYNC_7 { get; set; }
-        [XmlAttribute] public double T_ASYNC_8 { get; set; }
-        [XmlAttribute] public double T_ASYNC_9 { get; set; }
-        [XmlAttribute] public double T_ASYNC_INDEX { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD1 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD10 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD2 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD3 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD4 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD5 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD6 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD7 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD8 { get; set; }
-        [XmlAttribute] public double T_ASYNC_STD9 { get; set; }
-
-        [XmlAttribute] public double U1_OMIT_AREA_PRC { get; set; }
-        [XmlAttribute] public double U2_OMIT_AREA_PRC { get; set; }
-        [XmlAttribute] public double U3_ASYNC_INDEX2 { get; set; }
-        [XmlAttribute] public double U4_OMIT_WID { get; set; }
-        [XmlAttribute] public double U5_OMIT_HGT { get; set; }
-        [XmlAttribute] public double U_ANOTHER_OMIT_AREA { get; set; }
-        [XmlAttribute] public double U_ANOTHER_OMIT_AVG_PRC { get; set; }
-        [XmlAttribute] public double U_ANOTHER_OMIT_HGT { get; set; }
-        [XmlAttribute] public double U_ANOTHER_OMIT_MAX_PRC { get; set; }
-        [XmlAttribute] public double U_ANOTHER_OMIT_MIN_PRC { get; set; }
-        [XmlAttribute] public double U_ANOTHER_OMIT_WID { get; set; }
-        [XmlAttribute] public double U_OMIT_AREA { get; set; }
-        [XmlAttribute] public double U_OMIT_HGT { get; set; }
-        [XmlAttribute] public double U_OMIT_WID { get; set; }
-
-        [XmlAttribute] public double X001_INSPTYPE { get; set; }
-        [XmlAttribute] public double X002_OMIT_BLOB_AREA { get; set; }
-        [XmlAttribute] public double X003_OMIT_BLOB_LX { get; set; }
-        [XmlAttribute] public double X004_OMIT_BLOB_LY { get; set; }
-        [XmlAttribute] public double X005_OMIT_BLOB_BOX { get; set; }
-        [XmlAttribute] public double X008_NLD_LEFTNOTCHDIFF { get; set; }
-        [XmlAttribute] public double X009_NLD_RIGHTNOTCHDIFF { get; set; }
-        [XmlAttribute] public double X065_LABAREA { get; set; }
-        [XmlAttribute] public double X066_LDGRAYMAX { get; set; }
-        [XmlAttribute] public double X067_LDGRAYMIN { get; set; }
-        [XmlAttribute] public double X106_FMM_STRENGTH { get; set; }
-        [XmlAttribute] public double X107_FMM_AVGR { get; set; }
-        [XmlAttribute] public double X108_FMM_AVGG { get; set; }
-        [XmlAttribute] public double X109_FMM_AVGB { get; set; }
-        [XmlAttribute] public double X110_FMM_L { get; set; }
-        [XmlAttribute] public double X111_FMM_U { get; set; }
-        [XmlAttribute] public double X112_FMM_V { get; set; }
-        [XmlAttribute] public double X113_FMM_BASEL { get; set; }
-        [XmlAttribute] public double X114_FMM_BASEU { get; set; }
-        [XmlAttribute] public double X115_FMM_BASEV { get; set; }
-        [XmlAttribute] public double X116_FMM_DEG { get; set; }
-        [XmlAttribute] public double X117_FMM_SIZE { get; set; }
-        [XmlAttribute] public double X118_FMM_HEI { get; set; }
-        [XmlAttribute] public double X119_FMM_WID { get; set; }
-        [XmlAttribute] public double X120_FMM_U_DIFF { get; set; }
-        [XmlAttribute] public double X121_FMM_V_DIFF { get; set; }
-        [XmlAttribute] public double X122_FMM_U_DIFF_GR { get; set; }
-        [XmlAttribute] public double X123_FMM_U_DEV { get; set; }
-        [XmlAttribute] public double X124_FMM_V_DEV { get; set; }
-        [XmlAttribute] public double X125_FMM_U_DEV_GR { get; set; }
-        [XmlAttribute] public double X126_FMM_STRENGTH { get; set; }
-        [XmlAttribute] public double X127_FMM_U_DUV { get; set; }
-        [XmlAttribute] public double X128_FMM_V_DUV { get; set; }
-        [XmlAttribute] public double X129_FMM_U_COLORANGLE { get; set; }
-        [XmlAttribute] public double X130_FMM_V_COLORANGLE { get; set; }
-        [XmlAttribute] public double X137_CHANENL { get; set; }
-        [XmlAttribute] public double X138_REDPRC { get; set; }
-        [XmlAttribute] public double X139_GREENPRC { get; set; }
-        [XmlAttribute] public double X140_BLUEPRC { get; set; }
-        [XmlAttribute] public double X141_COLORDEG { get; set; }
-        [XmlAttribute] public double X142_REDDIFF { get; set; }
-        [XmlAttribute] public double X143_GREENDIFF { get; set; }
-        [XmlAttribute] public double X144_BLUEDIFF { get; set; }
-        [XmlAttribute] public double X145_FMM_T_REMAIN { get; set; }
-        [XmlAttribute] public double X146_FMM_T_INTERSECTION { get; set; }
-        [XmlAttribute] public double X147_FMM_MAXDIFFUV { get; set; }
-        [XmlAttribute] public double X158_IQ_PROB1 { get; set; }
-        [XmlAttribute] public double X159_IQ_PROB2 { get; set; }
-        [XmlAttribute] public double X160_IQ_FLAG { get; set; }
-        [XmlAttribute] public double X161_FMM_LINE_PROJ_MAX { get; set; }
-        [XmlAttribute] public double X162_FMM_LINE_PROJ_MEAN { get; set; }
-        [XmlAttribute] public double X163_FMM_STRENGTH_MAX10 { get; set; }
-        [XmlAttribute] public double X164_FMM_STRENGTH_MIN10 { get; set; }
-        [XmlAttribute] public double X165_FMM_U_DIFF_MAX { get; set; }
-        [XmlAttribute] public double X166_FMM_U_DIFF_MIN { get; set; }
-        [XmlAttribute] public double X167_FMM_V_DIFF_MAX { get; set; }
-        [XmlAttribute] public double X168_FMM_V_DIFF_MIN { get; set; }
-        [XmlAttribute] public double X200_SIYA_HORI_LD_GRIDMIN_CENTER { get; set; }
-        [XmlAttribute] public double X201_SIYA_HORI_LD_GRIDMIN_DFT { get; set; }
-        [XmlAttribute] public double X202_INSP_PROB_C1 { get; set; }
-        [XmlAttribute] public double X203_INSP_PROB_C2 { get; set; }
-        [XmlAttribute] public double X204_INSP_PROB_C3 { get; set; }
-        [XmlAttribute] public double X205_INSP_PROB_C4 { get; set; }
-        [XmlAttribute] public double X206_INSP_PROB_C5 { get; set; }
-        [XmlAttribute] public double X207_INSP_PROB_C6 { get; set; }
-        [XmlAttribute] public double X208_EDGE_GROUPING { get; set; }
+        [XmlAttribute] public double P_BRIGHT_M_LINK_CNT { get; set; }
+        
 
         // 第二次 GRAYLEVELL_RATE（动态输出，不定义重复属性）
         [XmlAnyAttribute]
         public System.Xml.XmlAttribute[] ExtraAttrs { get; set; }
-
-        [XmlAttribute("IMAGE_FILE_NO")] public int IMAGE_FILE_NO { get; set; }
-
-        [XmlElement("IMG")] public List<IMG> IMG { get; set; }
     }
 
     public class IMG

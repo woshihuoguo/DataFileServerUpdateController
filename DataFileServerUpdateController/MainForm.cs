@@ -23,7 +23,7 @@ namespace DataFileServerUpdateController
         {
             InitializeComponent();
 
-            this.checkBoxPasue.Location = new Point(this.ClientSize.Width - this.checkBoxPasue.Width - 20,30);
+            this.checkBoxPasue.Location = new Point(this.ClientSize.Width - this.checkBoxPasue.Width - 20, 30);
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -45,7 +45,11 @@ namespace DataFileServerUpdateController
         private BaseConfig baseConfig;
         private XMTMConfig serviceConfig;
         private Thread serviceThread;
-        private UpLoadBusiness business;
+
+        private UpLoadBusiness AOIbusiness;
+        private UpLoadBusiness GIBbusiness;
+
+
 
         //系统初始化
         private bool Initial(out string reason)
@@ -53,12 +57,6 @@ namespace DataFileServerUpdateController
             reason = string.Empty;
             try
             {
-                //尝试连接数据库
-                if (Frame.Frame.Instance.Start(out reason) == false)
-                {
-                    return false;
-                }
-
                 //加载系统配置,确认加载业务
                 if (JsonSerializerHelper<BaseConfig>.Load(out baseConfig, out reason) == false)
                 {
@@ -68,12 +66,6 @@ namespace DataFileServerUpdateController
                 }
                 else
                 {
-                    var type = $"Business.{baseConfig.CustomBusiness}UploadBusiness";
-                    business = (UpLoadBusiness)Assembly.Load("Business").CreateInstance(type);
-
-                    //加载业务配置
-                    //var serviceConfigType = business.GetConfig();
-                    //var type1 = $"Business.{baseConfig.CustomBusiness}Config";
                     serviceConfig = new XMTMConfig();
                     if (JsonSerializerHelper<XMTMConfig>.Load(out serviceConfig, out reason) == false)
                     {
@@ -83,39 +75,68 @@ namespace DataFileServerUpdateController
                     }
                     else
                     {
-                        business.SetConfig(serviceConfig);
-                    }
-
-              
-                    var serviceThread = new Thread(() =>
-                    {
-                        if (baseConfig.PlcHeartBeatEnable &&string.IsNullOrEmpty(baseConfig.PlcProtocol) == false &&
-                            string.IsNullOrEmpty(baseConfig.PlcIp) == false && baseConfig.PlcPort > 0)
+                        var typeAOI = $"Business.{baseConfig.CustomBusiness}UploadBusiness_AOI";
+                        AOIbusiness = (UpLoadBusiness)Assembly.Load("Business").CreateInstance(typeAOI);
+                        AOIbusiness.Frame = new Frame.Frame("127.0.0.1");  //AOI数据库
+                        AOIbusiness.SetConfig(serviceConfig);
+                        
+                        //尝试连AOI接数据库
+                        if (AOIbusiness.Frame.Start(out reason) == false)
                         {
-                            if (Enum.TryParse(baseConfig.PlcProtocol, out PLCProtocolType protocolType))
+                            return false;
+                        }
+                        AOIbusiness.Frame.SystemConfig = baseConfig;
+                        Task.Run(() =>
+                        {
+                            AOIbusiness.Start();
+                        });
+
+                        if (serviceConfig.Lane == "A")
+                        {
+                            var typeGIB = $"Business.{baseConfig.CustomBusiness}UploadBusiness_GIB";
+                            GIBbusiness = (UpLoadBusiness)Assembly.Load("Business").CreateInstance(typeGIB);
+                            GIBbusiness.Frame = new Frame.Frame("127.0.0.1");  //GIB数据库
+                            GIBbusiness.SetConfig(serviceConfig);
+                            
+                            //尝试连接复判数据库
+                            if (GIBbusiness.Frame.Start(out reason) == false)
                             {
-                                if (business.PlcCommunicator.Initial(protocolType, baseConfig.PlcIp, baseConfig.PlcPort, out string reason1) == false)
-                                {
-                                    Logger.Log("Debug", "PLC初始化发生异常," + reason1);
-                                }
-                                if (business.PlcCommunicator.Start(out reason1) == false)
-                                {
-                                    Logger.Log("Debug", "PLC启动发生异常," + reason1);
-                                }
+                                return false;
                             }
-                            else
+
+                            GIBbusiness.Frame.SystemConfig = baseConfig;
+                            Task.Run(() =>
                             {
-                                Logger.Log("Debug", "PLC类型配置错误");
-                            }
+                                GIBbusiness.Start();
+                            });
                         }
 
-                        business.Start();
-                    });
-                    serviceThread.Start();
+                        var serviceThread = new Thread(() =>
+                        {
+                            if (baseConfig.PlcHeartBeatEnable && string.IsNullOrEmpty(baseConfig.PlcProtocol) == false &&
+                                string.IsNullOrEmpty(baseConfig.PlcIp) == false && baseConfig.PlcPort > 0)
+                            {
+                                if (Enum.TryParse(baseConfig.PlcProtocol, out PLCProtocolType protocolType))
+                                {
+                                    if (AOIbusiness.PlcCommunicator.Initial(protocolType, baseConfig.PlcIp, baseConfig.PlcPort, out string reason1) == false)
+                                    {
+                                        Logger.Log("Debug", "PLC初始化发生异常," + reason1);
+                                    }
+                                    if (AOIbusiness.PlcCommunicator.Start(out reason1) == false)
+                                    {
+                                        Logger.Log("Debug", "PLC启动发生异常," + reason1);
+                                    }
+                                }
+                                else
+                                {
+                                    Logger.Log("Debug", "PLC类型配置错误");
+                                }
+                            }
 
+                        });
+                        serviceThread.Start();
+                    }
                 }
-
-                Frame.Frame.Instance.SystemConfig = baseConfig;
 
                 return true;
             }
@@ -165,13 +186,24 @@ namespace DataFileServerUpdateController
                     MessageBox.Show("保存配置失败，" + reason);
                 }
             }
+
+            AOIbusiness.SetConfig(form.Config);
+            GIBbusiness.SetConfig(form.Config);
+
+            AOIbusiness.InitConfig();
+            GIBbusiness.InitConfig();
         }
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            if (business != null)
+            if (AOIbusiness != null)
             {
-                business.Stop();
+                AOIbusiness.Stop();
+            }
+
+            if (GIBbusiness != null)
+            {
+                GIBbusiness.Stop();
             }
         }
 
@@ -192,9 +224,14 @@ namespace DataFileServerUpdateController
                 {
                     Logger.Log("Process", "DFS软件关闭");
 
-                    if (business != null)
+                    if (AOIbusiness != null)
                     {
-                        business.Stop();
+                        AOIbusiness.Stop();
+                    }
+
+                    if (GIBbusiness != null)
+                    {
+                        GIBbusiness.Stop();
                     }
 
                     Thread.Sleep(500);
@@ -214,16 +251,26 @@ namespace DataFileServerUpdateController
             checkBoxPasue.Text = checkBoxPasue.Checked ? "开始上传" : "停止上传";
             if (checkBoxPasue.Checked)
             {
-                if (business != null)
+                if (AOIbusiness != null)
                 {
-                    business.Pause();
+                    AOIbusiness.Stop();
+                }
+
+                if (GIBbusiness != null)
+                {
+                    GIBbusiness.Stop();
                 }
             }
             else
             {
-                if (business != null)
+                if (AOIbusiness != null)
                 {
-                    business.Restart();
+                    AOIbusiness.Stop();
+                }
+
+                if (GIBbusiness != null)
+                {
+                    GIBbusiness.Stop();
                 }
             }
             Logger.Log("Debug", "【按钮选择】" + (checkBoxPasue.Checked ? "开始上传" : "停止上传"));
@@ -232,7 +279,7 @@ namespace DataFileServerUpdateController
 
         private void MainForm_SizeChanged(object sender, EventArgs e)
         {
-            this.checkBoxPasue.Location=new Point(this.ClientSize.Width - this.checkBoxPasue.Width - 20,30);
+            this.checkBoxPasue.Location = new Point(this.ClientSize.Width - this.checkBoxPasue.Width - 20, 30);
             // 判断只有最小化时，隐藏窗体
             if (this.WindowState == FormWindowState.Minimized)
             {

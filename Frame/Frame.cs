@@ -8,15 +8,10 @@ namespace Frame
 {
     public partial class Frame
     {
-        private static readonly Frame instance = new Frame();
-        private Frame()
+        string ip = string.Empty;
+        public Frame(string ip)
         {
-
-        }
-
-        public static Frame Instance
-        {
-            get { return instance; }
+            this.ip = ip;
         }
 
         private readonly DataBase db = new DataBase();
@@ -37,7 +32,7 @@ namespace Frame
             try
             {
                 //连接数据库
-                db.Connect();
+                db.Connect(ip);
                 Storage = db;
 
                 db.Start();

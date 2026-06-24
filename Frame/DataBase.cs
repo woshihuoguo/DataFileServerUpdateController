@@ -52,11 +52,11 @@ namespace Frame
         //以下是连接与断开
         //====================================================================================================
 
-        public void Connect()
+        public void Connect(string ip)
         {
             //记录
             contextType = StorageContextType.MySQL;
-            ip = "127.0.0.1";
+            this.ip = ip;
             catalog = "hivenms";
             userName = "root";
             password = "123456";

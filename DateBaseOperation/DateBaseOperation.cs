@@ -12,13 +12,13 @@ namespace DateBaseOperation
 {
     public static class DateBaseOperation
     {
-        public static bool GetLastProcessResultEntity(long sysId, out ProcessResultEntity entity, out string reason)
+        public static bool GetLastProcessResultEntity(Frame.Frame frame,long sysId, out ProcessResultEntity entity, out string reason)
         {
             reason = string.Empty;
             entity = null;
             try
             {
-                var entities = Frame.Frame.Instance.Storage.CreateQuery<ProcessResultEntity>()
+                var entities = frame.Storage.CreateQuery<ProcessResultEntity>()
                     .EqualTo("SysId", sysId.ToString()).GetRange(0, 1).ToList();
                 if (entities != null && entities.Count > 0)
                 {
@@ -38,13 +38,13 @@ namespace DateBaseOperation
                 return true;
             }
         }
-        public static bool GetLastInspectSummaryEntity(long sysId, out InspectSummaryEntity entity, out string reason)
+        public static bool GetLastInspectSummaryEntity(Frame.Frame frame,long sysId, out InspectSummaryEntity entity, out string reason)
         {
             reason = string.Empty;
             entity = null;
             try
             {
-                var entities = Frame.Frame.Instance.Storage.CreateQuery<InspectSummaryEntity>()
+                var entities = frame.Storage.CreateQuery<InspectSummaryEntity>()
                      .GreaterThanOrEqualTo("SysId", sysId.ToString()).GetRange(0, 1).ToList();
                 if (entities != null && entities.Count > 0)
                 {
@@ -65,13 +65,60 @@ namespace DateBaseOperation
             }
         }
 
-        public static bool GetPanelInfoByUniqueId(string uniqueId,out List<PanelInfoEntity> entities, out string reason)
+        public static bool GetLastCellDFSInfoEntity(Frame.Frame frame, int sendFlag, out CellDFSInfoEntity entity, out string reason)
+        {
+            reason = string.Empty;
+            entity = null;
+            try
+            {
+                var entities = frame.Storage.CreateQuery<CellDFSInfoEntity>()
+                     .EqualTo("SendFlag", sendFlag.ToString()).GetRange(0, 1).ToList();
+                if (entities != null && entities.Count > 0)
+                {
+                    entity = entities[0];
+                    return true;
+                }
+                else
+                {
+                    reason = "未找到数据";
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                reason = "查询数据发生异常," + ex.Message;
+                Logger.Log("Error", "执行GetLastCellDFSInfoEntityntity发生异常," + ex.Message, ex);
+                return true;
+            }
+        }
+
+        public static bool SetLastCellDFSInfoEntity(Frame.Frame frame,int sendFlag,CellDFSInfoEntity entity, out string reason)
+        {
+            entity.SendFlag = sendFlag;
+            reason = string.Empty;
+            try
+            {
+                CellDFSInfoEntity[] cellDFSInfoEntities = { entity };
+                frame.Storage.Update<CellDFSInfoEntity>(cellDFSInfoEntities);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                reason = "Update数据发生异常," + ex.Message;
+                Logger.Log("Error", "执行SetLastCellDFSInfoEntity发生异常," + ex.Message, ex);
+
+                return false;
+            }
+        }
+
+        public static bool GetPanelInfoByUniqueId(Frame.Frame frame,string uniqueId,out List<PanelInfoEntity> entities, out string reason)
         {
             reason = string.Empty;
             entities = null;
             try
             {
-                entities = Frame.Frame.Instance.Storage.CreateQuery<PanelInfoEntity>().EqualTo("UniqueId", uniqueId).ToList();
+                entities = frame.Storage.CreateQuery<PanelInfoEntity>().EqualTo("UniqueId", uniqueId).ToList();
                 if (entities != null && entities.Count > 0)
                 {
                     return true;
@@ -86,13 +133,13 @@ namespace DateBaseOperation
             }
         }
   
-        public static bool GetProcessResultEntityFromUniqueId(string UniqueID, out List<ProcessResultEntity> entities, out string reason)
+        public static bool GetProcessResultEntityFromUniqueId(Frame.Frame frame,string UniqueID, out List<ProcessResultEntity> entities, out string reason)
         {
             reason = string.Empty;
             entities = new List<ProcessResultEntity>();
             try
             {
-                entities = Frame.Frame.Instance.Storage.CreateQuery<ProcessResultEntity>()
+                entities = frame.Storage.CreateQuery<ProcessResultEntity>()
                     .EqualTo("UniqueId", UniqueID).ToList();
 
                 if (entities != null && entities.Count > 0)
@@ -121,16 +168,16 @@ namespace DateBaseOperation
         /// <param name="entity"></param>
         /// <param name="reason"></param>
         /// <returns></returns>
-        public static bool GetICW_LCD_SurfaceResultEntityByUniqueID(string uniqueId, out ICW_LCD_SurfaceResultEntity entity, out string reason)
+        public static bool GetICW_LCD_SurfaceResultEntityByUniqueID(Frame.Frame frame, string uniqueId, out ICW_LCD_SurfaceResultEntity entity, out string reason)
         {
             reason = string.Empty;
             entity = null;
             try
             {
-                var entities = Frame.Frame.Instance.Storage.CreateQuery<ICW_LCD_SurfaceResultEntity>().EqualTo("UniqueID", uniqueId).ToList();
+                var entities = frame.Storage.CreateQuery<ICW_LCD_SurfaceResultEntity>().EqualTo("UniqueID", uniqueId).ToList();
                 if (entities != null && entities.Count > 0)
                 {
-                   //entity = entities.Last();
+                    entity = entities.Last();
                     return true;
                 }
                 else
@@ -148,14 +195,14 @@ namespace DateBaseOperation
         }
 
 
-        public static bool GetICW_LCD_SurfaceDefectEntityByUniqueID(string uniqueId, out List<ICW_LCD_SurfaceDefectEntity> entities,
+        public static bool GetICW_LCD_SurfaceDefectEntityByUniqueID(Frame.Frame frame, string uniqueId, out List<ICW_LCD_SurfaceDefectEntity> entities,
            out string reason)
         {
             reason = string.Empty;
             entities = new List<ICW_LCD_SurfaceDefectEntity>();
             try
             {
-                entities = Frame.Frame.Instance.Storage.CreateQuery<ICW_LCD_SurfaceDefectEntity>()
+                entities = frame.Storage.CreateQuery<ICW_LCD_SurfaceDefectEntity>()
                     .EqualTo("UniqueID", uniqueId).ToList();
 
                 if (entities != null && entities.Count > 0)

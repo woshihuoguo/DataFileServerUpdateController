@@ -40,6 +40,13 @@ namespace Business
             
         }
 
+        public virtual void InitConfig()
+        {
+
+        }
+
         public PlcCommunicator PlcCommunicator = new PlcCommunicator();
+
+        public Frame.Frame Frame;
     }
 }
